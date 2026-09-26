@@ -8,6 +8,7 @@ inventory questions grounded in real database data.
 ---
 
 ## 1. Project Overview  
+
 Smart Inventory AI helps a business answer:
 
 1. Which products are at risk of stocking out, and when?
