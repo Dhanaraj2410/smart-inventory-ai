@@ -1,4 +1,4 @@
-# Smart Inventory AI
+# Smart Inventory AI  
 
 **Inventory Stockout Prediction & Reorder Recommendation System** — a full-stack
 Django + ML + Hugging Face platform that predicts stockout risk, forecasts
