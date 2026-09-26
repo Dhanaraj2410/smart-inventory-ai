@@ -54,7 +54,6 @@ hard-coded.
   forecasts, recommendations, overstock analysis, top products.
 
 ## 3. Tech Stack
-
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.12, Django 5, Django REST Framework |
