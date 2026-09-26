@@ -23,7 +23,6 @@ assistant's answers) is computed live from the database — nothing is
 hard-coded.
 
 ## 2. Features
-
 - **Stockout risk classification** (LOW / MEDIUM / HIGH) with probability and
   explainable factors, via a trained classifier with a transparent
   rule-based fallback.
