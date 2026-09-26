@@ -19,7 +19,7 @@ Smart Inventory AI helps a business answer:
 6. "Which products need urgent restocking?" — asked in plain English.
 
 Every number shown anywhere in the app (dashboard cards, charts, the AI
-assistant's answers) is computed live from the database — nothing is
+assistant's answers) is computed live from the database — nothing is 
 hard-coded.
 
 ## 2. Features
