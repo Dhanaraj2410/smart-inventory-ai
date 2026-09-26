@@ -1,0 +1,44 @@
+:root {
+  --brand-1: #6366f1;
+  --brand-2: #22d3ee;
+  --bg: #f4f6fb;
+  --card-bg: rgba(255,255,255,0.75);
+  --border: rgba(15, 23, 42, 0.08);
+}
+body { background: var(--bg); font-family: "Segoe UI", Roboto, sans-serif; }
+.text-gradient { background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { width: 240px; background: #0f172a; color: #e2e8f0; padding: 1.25rem 0.75rem; flex-shrink: 0; }
+.sidebar-brand { font-weight: 700; font-size: 1.1rem; padding: 0.5rem 0.75rem 1.5rem; color: #fff; }
+.sidebar-nav li { list-style: none; }
+.sidebar-nav a { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.75rem;
+  border-radius: 10px; color: #cbd5e1; text-decoration: none; font-size: 0.92rem; margin-bottom: 2px; }
+.sidebar-nav a:hover { background: rgba(99,102,241,0.18); color: #fff; }
+.main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.topbar { display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.75rem; background: #fff; border-bottom: 1px solid var(--border); }
+.topbar-title { font-weight: 600; font-size: 1.1rem; }
+.role-badge { background: linear-gradient(90deg, var(--brand-1), var(--brand-2)); color: #fff; }
+.content { padding: 1.75rem; }
+.glass-card { background: var(--card-bg); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1.4rem;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.05); }
+.stat-card .stat-value { font-size: 1.9rem; font-weight: 700; }
+.stat-card .stat-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+.status-badge { padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.status-HEALTHY { background: #dcfce7; color: #166534; }
+.status-LOW_STOCK { background: #fef9c3; color: #854d0e; }
+.status-CRITICAL { background: #ffedd5; color: #9a3412; }
+.status-OVERSTOCKED { background: #e0e7ff; color: #3730a3; }
+.status-OUT_OF_STOCK { background: #fee2e2; color: #991b1b; }
+.risk-LOW { background: #dcfce7; color: #166534; }
+.risk-MEDIUM { background: #fef9c3; color: #854d0e; }
+.risk-HIGH { background: #fee2e2; color: #991b1b; }
+.table-card { background: #fff; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+.chat-bubble { border-radius: 14px; padding: 0.65rem 1rem; margin-bottom: 0.6rem; max-width: 80%; }
+.chat-bubble.user { background: var(--brand-1); color: #fff; margin-left: auto; }
+.chat-bubble.assistant { background: #fff; border: 1px solid var(--border); }
+.auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0f172a, #4338ca); }
+.auth-card { background: #fff; border-radius: 18px; padding: 2.25rem; width: 100%; max-width: 420px; }

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block page_title %}Bulk Prediction Results{% endblock %}
+{% block content %}
+<p class="text-muted"><a href="{% url 'predictions:bulk' %}">&larr; Run another bulk prediction</a> (tick "download as CSV" to export).</p>
+<div class="table-card">
+<table class="table table-hover mb-0">
+  <thead class="table-light"><tr><th>SKU</th><th>Name</th><th>Risk</th><th>Probability</th><th>Reorder?</th><th>Recommended Qty</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td>{{ r.sku }}</td><td>{{ r.name }}</td>
+        <td><span class="status-badge risk-{{ r.risk_level }}">{{ r.risk_level }}</span></td>
+        <td>{{ r.probability|floatformat:2 }}</td>
+        <td>{% if r.reorder_required %}Yes{% else %}No{% endif %}</td>
+        <td>{{ r.recommended_quantity }}</td></tr>
+  {% empty %}<tr><td colspan="6" class="text-muted text-center py-3">No matching products found in the CSV.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="glass-card" style="max-width:560px;">
+  <form method="get" action="{% url 'reports:generate' %}">
+    <h6>Select sections</h6>
+    {% for key, label in sections %}
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="section" value="{{ key }}" id="s_{{ key }}" checked>
+        <label class="form-check-label" for="s_{{ key }}">{{ label }}</label></div>
+    {% endfor %}
+    <h6 class="mt-3">Format</h6>
+    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="format" value="csv" checked><label class="form-check-label">CSV</label></div>
+    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="format" value="pdf"><label class="form-check-label">PDF</label></div>
+    <button class="btn btn-primary mt-3" type="submit"><i class="bi bi-download"></i> Generate Report</button>
+  </form>
+</div>
+{% endblock %}

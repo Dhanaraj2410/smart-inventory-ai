@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block page_title %}Stockout Predictions{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'predictions:bulk' %}" class="btn btn-outline-secondary"><i class="bi bi-upload"></i> Bulk CSV Prediction</a>
+</div>
+<div class="table-card">
+<table class="table table-hover mb-0 align-middle">
+  <thead class="table-light"><tr><th>Product</th><th>Risk</th><th>Probability</th><th>Top Factors</th></tr></thead>
+  <tbody>
+  {% for r in results %}
+    <tr>
+      <td><a href="{% url 'products:detail' r.product.pk %}">{{ r.product.sku }}</a><br><small class="text-muted">{{ r.product.name }}</small></td>
+      <td><span class="status-badge risk-{{ r.risk_level }}">{{ r.risk_level }}</span></td>
+      <td>{{ r.probability|floatformat:0 }}%</td>
+      <td><small>{{ r.factors|join:"; " }}</small></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="text-center text-muted py-4">No products yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

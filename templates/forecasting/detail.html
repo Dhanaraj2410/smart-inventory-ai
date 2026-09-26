@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_title %}Demand Forecast — {{ product.name }}{% endblock %}
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+  <a href="?horizon=7" class="btn btn-sm {% if horizon == 7 %}btn-primary{% else %}btn-outline-secondary{% endif %}">7 days</a>
+  <a href="?horizon=14" class="btn btn-sm {% if horizon == 14 %}btn-primary{% else %}btn-outline-secondary{% endif %}">14 days</a>
+  <a href="?horizon=30" class="btn btn-sm {% if horizon == 30 %}btn-primary{% else %}btn-outline-secondary{% endif %}">30 days</a>
+</div>
+<div class="glass-card mb-3">
+  <h6>{{ product.name }} — {{ horizon }}-day forecast ({{ forecast.model_name }})</h6>
+  <canvas id="forecastChart" height="120"></canvas>
+</div>
+<div class="glass-card">
+  <table class="table table-sm mb-0">
+    <thead><tr>{% for v in forecast.values %}<th>Day {{ forloop.counter }}</th>{% endfor %}</tr></thead>
+    <tbody><tr>{% for v in forecast.values %}<td>{{ v }}</td>{% endfor %}</tr></tbody>
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('forecastChart'), {
+  type: 'line',
+  data: { labels: [{% for v in forecast.values %}"Day {{ forloop.counter }}",{% endfor %}],
+    datasets: [{ label: 'Forecasted units', data: [{% for v in forecast.values %}{{ v }},{% endfor %}], borderColor: '#6366f1', tension: 0.3, fill: true, backgroundColor: 'rgba(99,102,241,0.1)' }] }
+});
+</script>
+{% endblock %}

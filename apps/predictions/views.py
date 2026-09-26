@@ -1,0 +1,105 @@
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+
+from apps.accounts.permissions import role_required
+from apps.accounts.models import User
+from apps.products.models import Product
+from .models import PredictionHistory, ModelPerformance, InventoryAlert
+from .services import run_prediction, bulk_predict
+
+
+@login_required
+def prediction_list(request):
+    results = bulk_predict(persist=False)
+    results.sort(key=lambda r: -r["probability"])
+    return render(request, "predictions/list.html", {"results": results})
+
+
+@login_required
+def model_performance(request):
+    performances = ModelPerformance.objects.all()[:20]
+    return render(request, "predictions/performance.html", {"performances": performances})
+
+
+@login_required
+def alert_list(request):
+    alerts = InventoryAlert.objects.select_related("product").filter(is_resolved=False)
+    return render(request, "predictions/alerts.html", {"alerts": alerts})
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+def resolve_alert(request, pk):
+    alert = get_object_or_404(InventoryAlert, pk=pk)
+    alert.is_resolved = True
+    alert.resolved_at = timezone.now()
+    alert.save(update_fields=["is_resolved", "resolved_at"])
+    return redirect("predictions:alerts")
+
+
+@login_required
+@role_required(User.Role.ADMIN)
+def train_models(request):
+    """Kicks off model training. Uses Celery if configured/running; otherwise
+    runs synchronously so the feature still works without a worker."""
+    if request.method == "POST":
+        try:
+            from apps.predictions.tasks import retrain_models_task
+            retrain_models_task.delay()
+            from django.contrib import messages
+            messages.success(request, "Model training started in the background.")
+        except Exception:
+            from ml.training.train_stockout_model import train_stockout_model
+            from ml.training.train_demand_model import train_demand_model
+            train_stockout_model()
+            train_demand_model()
+            from django.contrib import messages
+            messages.success(request, "Models trained synchronously (no Celery worker detected).")
+        return redirect("predictions:performance")
+    return render(request, "predictions/train.html")
+
+
+@login_required
+def bulk_upload_predict(request):
+    """CSV bulk prediction: upload a CSV of product_id[/sku] rows and get
+    stockout risk + reorder recommendation for each, exportable as CSV."""
+    import csv
+    import io
+    from django.http import HttpResponse
+    from apps.recommendations.services import calculate_reorder
+
+    if request.method == "POST" and request.FILES.get("file"):
+        f = request.FILES["file"]
+        decoded = io.StringIO(f.read().decode("utf-8-sig"))
+        reader = csv.DictReader(decoded)
+        rows = []
+        for row in reader:
+            ident = (row.get("product_id") or row.get("sku") or "").strip()
+            product = Product.objects.filter(sku=ident).first() or \
+                (Product.objects.filter(pk=ident).first() if ident.isdigit() else None)
+            if not product:
+                continue
+            prediction = run_prediction(product, persist=False)
+            reco = calculate_reorder(product)
+            rows.append({
+                "sku": product.sku, "name": product.name,
+                "risk_level": prediction["risk_level"], "probability": prediction["probability"],
+                "reorder_required": reco["reorder_required"],
+                "recommended_quantity": reco["recommended_quantity"],
+            })
+
+        if request.POST.get("export") == "1":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = 'attachment; filename="bulk_predictions.csv"'
+            writer = csv.writer(response)
+            writer.writerow(["sku", "name", "risk_level", "probability",
+                              "reorder_required", "recommended_quantity"])
+            for r in rows:
+                writer.writerow([r["sku"], r["name"], r["risk_level"], r["probability"],
+                                  r["reorder_required"], r["recommended_quantity"]])
+            return response
+
+        return render(request, "predictions/bulk_results.html", {"rows": rows})
+
+    return render(request, "predictions/bulk_upload.html")

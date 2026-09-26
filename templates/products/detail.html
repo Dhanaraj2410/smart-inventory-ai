@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block page_title %}{{ product.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="glass-card">
+      <h5>{{ product.name }}</h5>
+      <p class="text-muted mb-1">{{ product.sku }} · {{ product.category.name }}</p>
+      <span class="status-badge status-{{ product.stock_status }}">{{ product.stock_status }}</span>
+      <hr>
+      <p><strong>Current stock:</strong> {{ product.current_stock }}</p>
+      <p><strong>Reorder point:</strong> {{ product.reorder_point }}</p>
+      <p><strong>Supplier lead time:</strong> {{ product.supplier_lead_time }} days</p>
+      <p><strong>Unit price:</strong> ${{ product.unit_price }}</p>
+      <p><strong>Inventory value:</strong> ${{ product.inventory_value }}</p>
+      <a href="{% url 'products:edit' product.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+      <a href="{% url 'recommendations:simulate' product.pk %}" class="btn btn-outline-primary btn-sm">What-If Simulator</a>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="glass-card mb-3">
+      <h6>Stockout Risk</h6>
+      <p><span class="status-badge risk-{{ risk.risk_level }}">{{ risk.risk_level }}</span>
+         probability {{ risk.probability|floatformat:2 }} ({{ risk.model_name }})</p>
+      <ul>{% for f in risk.factors_json %}<li>{{ f }}</li>{% endfor %}</ul>
+      <a href="{% url 'ai_assistant:product_insight' product.pk %}" target="_blank" class="btn btn-sm btn-outline-dark">
+        <i class="bi bi-stars"></i> Generate AI Insight
+      </a>
+    </div>
+    <div class="glass-card mb-3">
+      <h6>7-Day Demand Forecast</h6>
+      <canvas id="forecastChart" height="120"></canvas>
+    </div>
+    <div class="glass-card">
+      <h6>Reorder Recommendation</h6>
+      <p>{{ recommendation.explanation }}</p>
+      <p><strong>Recommended quantity:</strong> {{ recommendation.recommended_quantity }} units
+         {% if recommendation.reorder_required %}<span class="badge bg-danger">Reorder now</span>{% endif %}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('forecastChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for v in forecast.values %}"Day {{ forloop.counter }}",{% endfor %}],
+    datasets: [{ label: 'Forecasted units', data: [{% for v in forecast.values %}{{ v }},{% endfor %}], borderColor: '#6366f1', tension: 0.3 }]
+  }
+});
+</script>
+{% endblock %}

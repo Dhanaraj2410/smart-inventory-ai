@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block page_title %}Import Products{% endblock %}
+{% block content %}
+<div class="glass-card" style="max-width:560px;">
+  <p>CSV columns: <code>sku,name,category,supplier,warehouse,current_stock,minimum_stock,maximum_stock,safety_stock,supplier_lead_time,unit_price</code></p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" class="form-control mb-3" name="file" accept=".csv" required>
+    <button class="btn btn-primary" type="submit">Import</button>
+  </form>
+</div>
+{% endblock %}

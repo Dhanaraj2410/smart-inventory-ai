@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  {% for label, value, icon in cards %}{% endfor %}
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">Total Products</div><div class="stat-value">{{ stats.total_products }}</div></div></div>
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">Total Units</div><div class="stat-value">{{ stats.total_units }}</div></div></div>
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">Low Stock</div><div class="stat-value text-warning">{{ stats.low_stock }}</div></div></div>
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">High Risk</div><div class="stat-value text-danger">{{ stats.high_risk }}</div></div></div>
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">Out of Stock</div><div class="stat-value text-danger">{{ stats.out_of_stock }}</div></div></div>
+  <div class="col-md-2"><div class="glass-card stat-card"><div class="stat-label">Overstocked</div><div class="stat-value text-primary">{{ stats.overstocked }}</div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="glass-card stat-card"><div class="stat-label">Predicted Stockouts</div><div class="stat-value">{{ stats.predicted_stockouts }}</div></div></div>
+  <div class="col-md-3"><div class="glass-card stat-card"><div class="stat-label">Recommended Reorders</div><div class="stat-value">{{ stats.recommended_reorders }}</div></div></div>
+  <div class="col-md-3"><div class="glass-card stat-card"><div class="stat-label">Total Inventory Value</div><div class="stat-value">${{ stats.total_inventory_value }}</div></div></div>
+  <div class="col-md-3"><div class="glass-card stat-card"><div class="stat-label">Avg Daily Sales</div><div class="stat-value">{{ stats.average_daily_sales }}</div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="glass-card"><h6>Stock Status</h6><canvas id="statusChart" height="220"></canvas></div></div>
+  <div class="col-md-4"><div class="glass-card"><h6>Stockout Risk</h6><canvas id="riskChart" height="220"></canvas></div></div>
+  <div class="col-md-4"><div class="glass-card"><h6>Category Inventory Value</h6><canvas id="categoryChart" height="220"></canvas></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-8"><div class="glass-card"><h6>Sales Trend (30 days)</h6><canvas id="salesTrendChart" height="180"></canvas></div></div>
+  <div class="col-md-4">
+    <div class="glass-card">
+      <h6>Top Risk Products</h6>
+      <table class="table table-sm mb-0">
+        <tbody>
+        {% for p in top_risk_products %}
+          <tr>
+            <td>{{ p.sku }} <br><small class="text-muted">{{ p.name }}</small></td>
+            <td><span class="status-badge risk-{{ p.risk_level }}">{{ p.risk_level }}</span></td>
+            <td>{{ p.probability|floatformat:0 }}%</td>
+          </tr>
+        {% empty %}
+          <tr><td class="text-muted">No predictions yet — visit Predictions to run one.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Healthy', 'Low Stock', 'Critical', 'Overstocked', 'Out of Stock'],
+    datasets: [{ data: [{{ stats.healthy }}, {{ stats.status_breakdown.LOW_STOCK }}, {{ stats.status_breakdown.CRITICAL }}, {{ stats.overstocked }}, {{ stats.out_of_stock }}],
+      backgroundColor: ['#16a34a','#eab308','#f97316','#6366f1','#ef4444'] }]
+  }
+});
+new Chart(document.getElementById('riskChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Low', 'Medium', 'High'],
+    datasets: [{ data: [{{ risk_breakdown.LOW|default:0 }}, {{ risk_breakdown.MEDIUM|default:0 }}, {{ risk_breakdown.HIGH|default:0 }}],
+      backgroundColor: ['#16a34a','#eab308','#ef4444'] }]
+  }
+});
+new Chart(document.getElementById('categoryChart'), {
+  type: 'bar',
+  data: {
+    labels: [{% for c in category_analysis %}"{{ c.category }}",{% endfor %}],
+    datasets: [{ label: 'Inventory Value ($)', data: [{% for c in category_analysis %}{{ c.inventory_value }},{% endfor %}],
+      backgroundColor: '#6366f1' }]
+  },
+  options: { plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('salesTrendChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for s in sales_trend %}"{{ s.date }}",{% endfor %}],
+    datasets: [{ label: 'Units Sold', data: [{% for s in sales_trend %}{{ s.units }},{% endfor %}],
+      borderColor: '#22d3ee', tension: 0.3, fill: false }]
+  }
+});
+</script>
+{% endblock %}

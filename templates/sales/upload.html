@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block page_title %}Upload Sales History{% endblock %}
+{% block content %}
+<div class="glass-card mb-3" style="max-width:600px;">
+  <p>CSV columns required: <code>date, product_id, quantity_sold, unit_price</code> (optional: <code>warehouse</code>).
+     <code>product_id</code> may be the numeric product ID or its SKU.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" class="form-control mb-3" name="file" accept=".csv" required>
+    <button class="btn btn-primary" type="submit">Upload &amp; Validate</button>
+  </form>
+</div>
+<div class="table-card">
+<table class="table table-sm mb-0">
+  <thead class="table-light"><tr><th>File</th><th>Processed</th><th>Created</th><th>Failed</th><th>Uploaded</th></tr></thead>
+  <tbody>
+  {% for log in logs %}
+    <tr><td>{{ log.file_name }}</td><td>{{ log.rows_processed }}</td><td>{{ log.rows_created }}</td>
+        <td class="{% if log.rows_failed %}text-danger{% endif %}">{{ log.rows_failed }}</td><td>{{ log.uploaded_at }}</td></tr>
+  {% empty %}<tr><td colspan="5" class="text-muted text-center py-3">No uploads yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

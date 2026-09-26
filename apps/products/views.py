@@ -1,0 +1,189 @@
+import csv
+import io
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+
+from apps.accounts.permissions import role_required
+from apps.accounts.models import User
+from .models import Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
+
+
+@login_required
+def product_list(request):
+    qs = Product.objects.select_related("category", "supplier", "warehouse").filter(is_active=True)
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(sku__icontains=q) |
+                        Q(category__name__icontains=q) | Q(supplier__name__icontains=q))
+
+    category = request.GET.get("category")
+    if category:
+        qs = qs.filter(category_id=category)
+
+    warehouse = request.GET.get("warehouse")
+    if warehouse:
+        qs = qs.filter(warehouse_id=warehouse)
+
+    status = request.GET.get("status")
+    products = list(qs)
+    if status:
+        products = [p for p in products if p.stock_status == status]
+
+    paginator = Paginator(products, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "page_obj": page_obj,
+        "categories": Category.objects.all(),
+        "warehouses": Warehouse.objects.all(),
+        "status_labels": STOCK_STATUS_LABELS,
+        "q": q,
+    }
+    return render(request, "products/list.html", context)
+
+
+@login_required
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    from apps.predictions.services import get_latest_risk
+    from apps.forecasting.services import get_latest_forecast
+    from apps.recommendations.services import build_recommendation
+
+    context = {
+        "product": product,
+        "risk": get_latest_risk(product),
+        "forecast": get_latest_forecast(product, horizon=7),
+        "forecast_30": get_latest_forecast(product, horizon=30),
+        "recommendation": build_recommendation(product),
+    }
+    return render(request, "products/detail.html", context)
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+def product_create(request):
+    if request.method == "POST":
+        product = _save_product_from_post(request, Product())
+        messages.success(request, f"Product {product.sku} created.")
+        return redirect("products:detail", pk=product.pk)
+    return render(request, "products/form.html", {
+        "categories": Category.objects.all(), "suppliers": Supplier.objects.all(),
+        "warehouses": Warehouse.objects.all(),
+    })
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+def product_edit(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        product = _save_product_from_post(request, product)
+        messages.success(request, f"Product {product.sku} updated.")
+        return redirect("products:detail", pk=product.pk)
+    return render(request, "products/form.html", {
+        "product": product, "categories": Category.objects.all(),
+        "suppliers": Supplier.objects.all(), "warehouses": Warehouse.objects.all(),
+    })
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+def product_delete(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        product.is_active = False
+        product.save(update_fields=["is_active"])
+        messages.success(request, f"Product {product.sku} deleted.")
+        return redirect("products:list")
+    return render(request, "products/confirm_delete.html", {"product": product})
+
+
+def _save_product_from_post(request, product):
+    p = request.POST
+    product.sku = p.get("sku", product.sku)
+    product.name = p.get("name", product.name)
+    product.description = p.get("description", "")
+    product.category_id = p.get("category") or None
+    product.supplier_id = p.get("supplier") or None
+    product.warehouse_id = p.get("warehouse") or None
+    product.current_stock = int(p.get("current_stock") or 0)
+    product.minimum_stock = int(p.get("minimum_stock") or 0)
+    product.maximum_stock = int(p.get("maximum_stock") or 0)
+    product.safety_stock = int(p.get("safety_stock") or 0)
+    product.supplier_lead_time = int(p.get("supplier_lead_time") or 5)
+    product.unit_price = p.get("unit_price") or 0
+    product.save()
+    return product
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+def product_import(request):
+    """Bulk import products from CSV: sku,name,category,supplier,warehouse,
+    current_stock,minimum_stock,maximum_stock,safety_stock,supplier_lead_time,unit_price"""
+    if request.method == "POST" and request.FILES.get("file"):
+        f = request.FILES["file"]
+        decoded = io.StringIO(f.read().decode("utf-8-sig"))
+        reader = csv.DictReader(decoded)
+        required = {"sku", "name"}
+        if not required.issubset(set(reader.fieldnames or [])):
+            messages.error(request, f"CSV must include columns: {', '.join(required)}")
+            return redirect("products:import")
+
+        created, updated, errors = 0, 0, []
+        for i, row in enumerate(reader, start=2):
+            try:
+                category, _ = Category.objects.get_or_create(name=row.get("category", "General").strip() or "General")
+                supplier = None
+                if row.get("supplier"):
+                    supplier, _ = Supplier.objects.get_or_create(name=row["supplier"].strip())
+                warehouse = None
+                if row.get("warehouse"):
+                    warehouse, _ = Warehouse.objects.get_or_create(name=row["warehouse"].strip())
+
+                obj, was_created = Product.objects.update_or_create(
+                    sku=row["sku"].strip(),
+                    defaults=dict(
+                        name=row["name"].strip(),
+                        category=category, supplier=supplier, warehouse=warehouse,
+                        current_stock=int(float(row.get("current_stock") or 0)),
+                        minimum_stock=int(float(row.get("minimum_stock") or 10)),
+                        maximum_stock=int(float(row.get("maximum_stock") or 500)),
+                        safety_stock=int(float(row.get("safety_stock") or 20)),
+                        supplier_lead_time=int(float(row.get("supplier_lead_time") or 5)),
+                        unit_price=float(row.get("unit_price") or 0),
+                    ),
+                )
+                created += was_created
+                updated += not was_created
+            except Exception as e:
+                errors.append(f"Row {i}: {e}")
+
+        messages.success(request, f"Import complete: {created} created, {updated} updated.")
+        if errors:
+            messages.warning(request, f"{len(errors)} row(s) had errors: " + "; ".join(errors[:5]))
+        return redirect("products:list")
+
+    return render(request, "products/import.html")
+
+
+@login_required
+def product_export(request):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="products_export.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["sku", "name", "category", "supplier", "warehouse", "current_stock",
+                      "minimum_stock", "maximum_stock", "safety_stock", "supplier_lead_time",
+                      "unit_price", "stock_status"])
+    for p in Product.objects.select_related("category", "supplier", "warehouse").filter(is_active=True):
+        writer.writerow([p.sku, p.name, p.category.name if p.category else "",
+                          p.supplier.name if p.supplier else "", p.warehouse.name if p.warehouse else "",
+                          p.current_stock, p.minimum_stock, p.maximum_stock, p.safety_stock,
+                          p.supplier_lead_time, p.unit_price, p.stock_status])
+    return response

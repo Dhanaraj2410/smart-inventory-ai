@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block page_title %}AI Assistant{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="glass-card">
+      <a href="{% url 'ai_assistant:chat_new' %}" class="btn btn-primary btn-sm w-100 mb-3"><i class="bi bi-plus"></i> New conversation</a>
+      <div class="list-group list-group-flush">
+      {% for c in conversations %}
+        <a href="{% url 'ai_assistant:chat' c.id %}" class="list-group-item list-group-item-action {% if c.id == conversation.id %}active{% endif %}">
+          {{ c.title|default:"New conversation"|truncatechars:30 }}
+        </a>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div class="glass-card d-flex flex-column" style="height:70vh;">
+      <div class="flex-grow-1 overflow-auto mb-3" id="chatLog">
+        {% for m in chat_messages %}
+          <div class="chat-bubble {{ m.role|lower }}">{{ m.content|linebreaksbr }}</div>
+        {% empty %}
+          <p class="text-muted">Ask me things like <em>"Which products need urgent restocking?"</em>,
+             <em>"How many Wireless Headphones do we have?"</em>, or <em>"Give me an inventory summary."</em>
+             I only answer from real data in the database — I'll say so if I can't find something.</p>
+        {% endfor %}
+      </div>
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <input class="form-control" name="message" placeholder="Ask about your inventory..." autofocus required>
+        <button class="btn btn-primary"><i class="bi bi-send"></i></button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  const log = document.getElementById('chatLog'); log.scrollTop = log.scrollHeight;
+</script>
+{% endblock %}

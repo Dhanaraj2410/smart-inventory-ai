@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="glass-card" style="max-width:480px;">
+  <p>Delete <strong>{{ product.name }}</strong> ({{ product.sku }})? This deactivates the product.</p>
+  <form method="post">{% csrf_token %}
+    <button class="btn btn-danger" type="submit">Delete</button>
+    <a href="{% url 'products:detail' product.pk %}" class="btn btn-outline-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

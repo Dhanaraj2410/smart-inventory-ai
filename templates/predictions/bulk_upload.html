@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block page_title %}Bulk Prediction{% endblock %}
+{% block content %}
+<div class="glass-card" style="max-width:560px;">
+  <p>Upload a CSV with a <code>product_id</code> or <code>sku</code> column to get stockout risk + reorder recommendations for every row.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" class="form-control mb-3" name="file" accept=".csv" required>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="export" value="1" id="exportCsv">
+      <label class="form-check-label" for="exportCsv">Download results as CSV instead of viewing on screen</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Run Predictions</button>
+  </form>
+</div>
+{% endblock %}

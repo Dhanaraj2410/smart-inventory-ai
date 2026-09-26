@@ -1,0 +1,28 @@
+{
+  "best_model": "RandomForestRegressor",
+  "data_source": "csv_fallback",
+  "training_samples": 11908,
+  "all_results": {
+    "LinearRegression": {
+      "mae": 6.932,
+      "mse": 247.564,
+      "rmse": 15.734,
+      "r2": 0.9119,
+      "mape": 42.21
+    },
+    "RandomForestRegressor": {
+      "mae": 5.997,
+      "mse": 212.525,
+      "rmse": 14.578,
+      "r2": 0.9244,
+      "mape": 25.65
+    },
+    "GradientBoostingRegressor": {
+      "mae": 6.137,
+      "mse": 245.503,
+      "rmse": 15.669,
+      "r2": 0.9126,
+      "mape": 26.07
+    }
+  }
+}

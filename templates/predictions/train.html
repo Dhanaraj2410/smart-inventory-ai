@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block page_title %}Train Models{% endblock %}
+{% block content %}
+<div class="glass-card" style="max-width:560px;">
+  <p>Runs the full ML pipeline (data validation → cleaning → feature engineering →
+     train/test split → model training → evaluation → best-model selection → serialization)
+     for both the stockout classifier and demand regressor.</p>
+  <p class="text-muted">Uses Celery in the background if a worker is running; otherwise runs synchronously.</p>
+  <form method="post">{% csrf_token %}<button class="btn btn-primary" type="submit"><i class="bi bi-cpu"></i> Train Models Now</button></form>
+</div>
+{% endblock %}

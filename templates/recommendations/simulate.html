@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_title %}What-If Simulator — {{ product.name }}{% endblock %}
+{% block content %}
+<div class="alert alert-info"><i class="bi bi-info-circle"></i> This is a <strong>simulation</strong>, not a live prediction — it recalculates the reorder logic under hypothetical conditions and does not persist or affect real inventory data.</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="glass-card">
+      <h6>Adjust assumptions</h6>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2"><label class="form-label">Expected demand change (%)</label>
+          <input class="form-control" type="number" step="1" name="demand_increase_pct" value="0"></div>
+        <div class="mb-2"><label class="form-label">Extra supplier delay (days)</label>
+          <input class="form-control" type="number" name="extra_lead_days" value="0"></div>
+        <div class="mb-2"><label class="form-label">Current stock override</label>
+          <input class="form-control" type="number" name="current_stock_override" placeholder="{{ product.current_stock }}"></div>
+        <div class="mb-2"><label class="form-label">Safety stock override</label>
+          <input class="form-control" type="number" name="safety_stock_override" placeholder="{{ product.safety_stock }}"></div>
+        <button class="btn btn-primary mt-2 w-100" type="submit">Run Simulation</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="row g-3">
+      <div class="col-6">
+        <div class="glass-card">
+          <h6 class="text-muted">Baseline (current)</h6>
+          <p>Reorder point: <strong>{{ result.baseline.reorder_point }}</strong></p>
+          <p>Recommended qty: <strong>{{ result.baseline.recommended_quantity }}</strong></p>
+          <p>{% if result.baseline.reorder_required %}<span class="badge bg-danger">Reorder now</span>{% else %}<span class="badge bg-success">OK</span>{% endif %}</p>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="glass-card border-primary">
+          <h6 class="text-primary">Simulated</h6>
+          {% if result.recommended_quantity is not None %}
+          <p>Reorder point: <strong>{{ result.reorder_point }}</strong></p>
+          <p>Recommended qty: <strong>{{ result.recommended_quantity }}</strong></p>
+          <p>{% if result.reorder_required %}<span class="badge bg-danger">Reorder now</span>{% else %}<span class="badge bg-success">OK</span>{% endif %}</p>
+          {% else %}<p class="text-muted">Adjust assumptions and run the simulation.</p>{% endif %}
+        </div>
+      </div>
+      {% if result.explanation %}
+      <div class="col-12"><div class="glass-card"><h6>Explanation</h6><p class="mb-0">{{ result.explanation }}</p></div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

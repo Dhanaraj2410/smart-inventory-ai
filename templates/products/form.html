@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block page_title %}{% if product %}Edit Product{% else %}New Product{% endif %}{% endblock %}
+{% block content %}
+<div class="glass-card" style="max-width:640px;">
+<form method="post">
+  {% csrf_token %}
+  <div class="row g-2">
+    <div class="col-6"><label class="form-label">SKU</label><input class="form-control" name="sku" value="{{ product.sku|default:'' }}" required></div>
+    <div class="col-6"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ product.name|default:'' }}" required></div>
+    <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" name="description">{{ product.description|default:'' }}</textarea></div>
+    <div class="col-4"><label class="form-label">Category</label>
+      <select class="form-select" name="category"><option value="">--</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-4"><label class="form-label">Supplier</label>
+      <select class="form-select" name="supplier"><option value="">--</option>
+      {% for s in suppliers %}<option value="{{ s.id }}" {% if product.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+    <div class="col-4"><label class="form-label">Warehouse</label>
+      <select class="form-select" name="warehouse"><option value="">--</option>
+      {% for w in warehouses %}<option value="{{ w.id }}" {% if product.warehouse_id == w.id %}selected{% endif %}>{{ w.name }}</option>{% endfor %}</select></div>
+    <div class="col-3"><label class="form-label">Current stock</label><input class="form-control" type="number" name="current_stock" value="{{ product.current_stock|default:0 }}"></div>
+    <div class="col-3"><label class="form-label">Min stock</label><input class="form-control" type="number" name="minimum_stock" value="{{ product.minimum_stock|default:10 }}"></div>
+    <div class="col-3"><label class="form-label">Max stock</label><input class="form-control" type="number" name="maximum_stock" value="{{ product.maximum_stock|default:500 }}"></div>
+    <div class="col-3"><label class="form-label">Safety stock</label><input class="form-control" type="number" name="safety_stock" value="{{ product.safety_stock|default:20 }}"></div>
+    <div class="col-4"><label class="form-label">Supplier lead time (days)</label><input class="form-control" type="number" name="supplier_lead_time" value="{{ product.supplier_lead_time|default:5 }}"></div>
+    <div class="col-4"><label class="form-label">Unit price</label><input class="form-control" type="number" step="0.01" name="unit_price" value="{{ product.unit_price|default:0 }}"></div>
+  </div>
+  <button class="btn btn-primary mt-3" type="submit">Save</button>
+</form>
+</div>
+{% endblock %}
