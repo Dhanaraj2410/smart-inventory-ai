@@ -270,7 +270,7 @@ means:
   a strong, coherent first implementation that hasn't yet had a live QA
   pass, not as something guaranteed bug-free on first boot.
 
-## 14. Future Improvements
+## 14. Future Improvements   
 
 - Swap the simple keyword-based intent router in `ai_assistant/retrieval.py`
   for a proper intent-classification model.
