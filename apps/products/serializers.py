@@ -43,6 +43,6 @@ class ProductSerializer(serializers.ModelSerializer):
     def validate(self, data):
         min_s = data.get("minimum_stock", getattr(self.instance, "minimum_stock", 0))
         max_s = data.get("maximum_stock", getattr(self.instance, "maximum_stock", 0))
-        if max_s and min_s and max_s < min_s:
+        if max_s < min_s:
             raise serializers.ValidationError("maximum_stock cannot be less than minimum_stock.")
         return data

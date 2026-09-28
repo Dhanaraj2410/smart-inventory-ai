@@ -46,6 +46,15 @@ class APITestCase(TestCase):
         })
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
+    def test_product_maximum_stock_cannot_be_below_minimum_stock(self):
+        self.client.force_authenticate(self.admin)
+        resp = self.client.patch(
+            f"/api/products/{self.product.id}/",
+            {"minimum_stock": 10, "maximum_stock": 0},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_prediction_endpoint(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.get(f"/api/predict/{self.product.id}/")
