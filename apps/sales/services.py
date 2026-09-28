@@ -9,6 +9,7 @@ Expected columns (header row required):
 import csv
 import io
 from datetime import datetime
+from decimal import Decimal
 
 from django.db import transaction
 
@@ -67,7 +68,10 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
                 raise ValueError("Missing date or product_id")
             date = _parse_date(row["date"])
             product = _resolve_product(row["product_id"], product_cache)
-            qty = int(float(row["quantity_sold"]))
+            quantity = Decimal(row["quantity_sold"])
+            if not quantity.is_finite() or quantity != quantity.to_integral_value():
+                raise ValueError("quantity_sold must be a whole number")
+            qty = int(quantity)
             if qty < 0:
                 raise ValueError("quantity_sold cannot be negative")
             price = float(row["unit_price"])

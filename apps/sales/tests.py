@@ -30,3 +30,16 @@ class SalesCsvImportTests(TestCase):
         self.assertEqual(log.rows_created, 1)
         self.assertEqual(log.rows_failed, 0)
         self.assertEqual(SalesRecord.objects.get().quantity_sold, 2)
+
+    def test_import_rejects_fractional_quantities(self):
+        csv_data = (
+            "date,product_id,quantity_sold,unit_price\n"
+            "2024-01-01,CSV-001,2.5,3.50\n"
+        )
+        uploaded_file = SimpleUploadedFile("sales.csv", csv_data.encode())
+
+        log = validate_and_import_csv(uploaded_file)
+
+        self.assertEqual(log.rows_created, 0)
+        self.assertEqual(log.rows_failed, 1)
+        self.assertFalse(SalesRecord.objects.exists())
