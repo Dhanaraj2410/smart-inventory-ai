@@ -55,6 +55,7 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
     if not reader.fieldnames or not REQUIRED_COLUMNS.issubset(set(c.strip() for c in reader.fieldnames)):
         missing = REQUIRED_COLUMNS - set(c.strip() for c in (reader.fieldnames or []))
         raise ValueError(f"CSV is missing required column(s): {', '.join(sorted(missing))}")
+    reader.fieldnames = [column.strip() for column in reader.fieldnames]
 
     product_cache, warehouse_cache = {}, {}
     to_create, errors, processed = [], [], 0
