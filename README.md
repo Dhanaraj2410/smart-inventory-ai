@@ -52,6 +52,8 @@ hard-coded.
 - **Reports**: CSV and PDF export across inventory summary, stockout risk,
   forecasts, recommendations, overstock analysis, top products.
 
+  
+
 ## 3. Tech Stack
 | Layer | Technology |
 |---|---|
