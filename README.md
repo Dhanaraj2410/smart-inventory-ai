@@ -3,7 +3,9 @@
 Django + ML + Hugging Face platform that predicts stockout risk, forecasts
 demand, recommends reorder quantities, and answers natural-language
 inventory questions grounded in real database data.
+
 ---
+
 ## 1. Project Overview  
 
 Smart Inventory AI helps a business answer:
