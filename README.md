@@ -160,6 +160,19 @@ Key models: `User` (role-based), `Product`, `Category`, `Supplier`,
 
 ## 8. Installation
 
+For the complete platform-specific instructions, see
+[Local development](docs/development.md). The Windows PowerShell helper
+`scripts/dev.ps1` can create the virtual environment and install dependencies:
+
+```powershell
+.\scripts\dev.ps1 setup
+.\scripts\dev.ps1 migrate
+.\scripts\dev.ps1 run
+```
+
+The manual setup below is retained for macOS/Linux and users who prefer to
+manage their environment directly:
+
 ```bash
 git clone <this-repo>
 cd smart-inventory-ai
@@ -207,6 +220,9 @@ REDIS_URL=redis://localhost:6379/0
 ```
 
 Never commit `.env` -- see `.gitignore`.
+
+For variable descriptions and production notes, see the
+[configuration reference](docs/configuration.md).
 
 ## 10. Running Locally / Training Models
 
@@ -269,7 +285,7 @@ means:
   a strong, coherent first implementation that hasn't yet had a live QA
   pass, not as something guaranteed bug-free on first boot.
 
-## 14. Future Improvements   
+## 14. Future Improvements
 
 - Swap the simple keyword-based intent router in `ai_assistant/retrieval.py`
   for a proper intent-classification model.
@@ -278,4 +294,14 @@ means:
 - Add rate limiting on `/api/ai/*` endpoints.
 - Add a proper frontend build (React/Vue) if the team outgrows server-rendered
   templates.
-  
+
+## Developer documentation
+
+- [Contributing](CONTRIBUTING.md)
+- [Local development](docs/development.md)
+- [Testing and checks](docs/testing.md)
+- [Configuration reference](docs/configuration.md)
+- [REST API quick reference](docs/api.md)
+- [Machine-learning workflow](docs/ml-workflow.md)
+- [Docker Compose](docs/containers.md)
+- [Troubleshooting](docs/troubleshooting.md)
