@@ -12,7 +12,7 @@ class AuthTests(TestCase):
     def test_registration_creates_user_with_default_role(self):
         resp = self.client.post(reverse("accounts:register"), {
             "username": "newuser", "email": "new@example.com",
-            "first_name": "New", "last_name": "User", "role": User.Role.VIEWER,
+            "first_name": "New", "last_name": "User", "role": User.Role.ADMIN,
             "password1": "SuperSecret123!", "password2": "SuperSecret123!",
         })
         self.assertTrue(User.objects.filter(username="newuser").exists())
