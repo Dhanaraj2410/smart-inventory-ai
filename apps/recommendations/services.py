@@ -17,6 +17,9 @@ def average_daily_sales(product, window_days=30):
     from django.utils import timezone
     from datetime import timedelta
 
+    if window_days < 1:
+        raise ValueError("window_days must be a positive integer")
+
     today = timezone.now().date()
     since = today - timedelta(days=window_days - 1)
     qs = SalesRecord.objects.filter(product=product, date__gte=since, date__lte=today)

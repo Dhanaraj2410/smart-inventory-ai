@@ -40,6 +40,12 @@ class ReorderCalculationTests(TestCase):
 
         self.assertEqual(average_daily_sales(self.product, window_days=7), 10)
 
+    def test_average_daily_sales_rejects_non_positive_window(self):
+        for window_days in (0, -1):
+            with self.subTest(window_days=window_days):
+                with self.assertRaisesMessage(ValueError, "window_days must be a positive integer"):
+                    average_daily_sales(self.product, window_days=window_days)
+
     def test_reorder_point_formula(self):
         """Reorder point = avg_daily_demand * lead_time + safety_stock."""
         result = calculate_reorder(self.product)
