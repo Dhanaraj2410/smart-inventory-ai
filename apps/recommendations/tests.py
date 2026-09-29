@@ -32,6 +32,14 @@ class ReorderCalculationTests(TestCase):
 
         self.assertEqual(average_daily_sales(self.product, window_days=30), 10)
 
+    def test_average_daily_sales_uses_exact_window(self):
+        SalesRecord.objects.create(
+            product=self.product, date=date.today() - timedelta(days=7),
+            quantity_sold=1000, unit_price=10,
+        )
+
+        self.assertEqual(average_daily_sales(self.product, window_days=7), 10)
+
     def test_reorder_point_formula(self):
         """Reorder point = avg_daily_demand * lead_time + safety_stock."""
         result = calculate_reorder(self.product)
