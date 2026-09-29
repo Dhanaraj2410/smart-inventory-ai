@@ -17,6 +17,14 @@ class SimulationInputSerializer(serializers.Serializer):
     current_stock_override = serializers.IntegerField(required=False, min_value=0)
     safety_stock_override = serializers.IntegerField(required=False, min_value=0)
 
+    def validate(self, attrs):
+        unexpected_fields = set(self.initial_data) - set(self.fields)
+        if unexpected_fields:
+            raise serializers.ValidationError({
+                field: "Unexpected field." for field in sorted(unexpected_fields)
+            })
+        return attrs
+
 
 class ReorderRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ReorderRecommendation.objects.select_related("product").all()

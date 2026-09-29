@@ -105,6 +105,7 @@ class APITestCase(TestCase):
             {"extra_lead_days": 366},
             {"current_stock_override": -1},
             {"safety_stock_override": -1},
+            {"current_stock": 999999},
         ]
         for payload in invalid_payloads:
             with self.subTest(payload=payload):
