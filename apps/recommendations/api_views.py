@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import serializers, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +9,13 @@ from apps.products.models import Product
 from .models import ReorderRecommendation
 from .serializers import ReorderRecommendationSerializer
 from .services import build_recommendation, bulk_recommendations
+
+
+class SimulationInputSerializer(serializers.Serializer):
+    demand_increase_pct = serializers.FloatField(default=0, min_value=-100)
+    extra_lead_days = serializers.IntegerField(default=0, min_value=0, max_value=365)
+    current_stock_override = serializers.IntegerField(required=False, min_value=0)
+    safety_stock_override = serializers.IntegerField(required=False, min_value=0)
 
 
 class ReorderRecommendationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -30,13 +37,15 @@ def bulk_recommendations_view(request):
 @permission_classes([IsAuthenticated])
 def simulate_view(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    payload = request.data
+    payload = SimulationInputSerializer(data=request.data)
+    payload.is_valid(raise_exception=True)
+    data = payload.validated_data
     result = build_recommendation(
         product, persist=False,
-        demand_increase_pct=float(payload.get("demand_increase_pct", 0)),
-        extra_lead_days=int(payload.get("extra_lead_days", 0)),
-        override_current_stock=payload.get("current_stock_override"),
-        override_safety_stock=payload.get("safety_stock_override"),
+        demand_increase_pct=data["demand_increase_pct"],
+        extra_lead_days=data["extra_lead_days"],
+        override_current_stock=data.get("current_stock_override"),
+        override_safety_stock=data.get("safety_stock_override"),
         is_simulation=True,
     )
     result["product"] = product.sku

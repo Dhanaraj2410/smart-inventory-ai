@@ -95,6 +95,23 @@ class APITestCase(TestCase):
         resp = self.client.post("/api/simulation/999999/", {}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_simulation_endpoint_rejects_invalid_inputs(self):
+        self.client.force_authenticate(self.viewer)
+        invalid_payloads = [
+            {"demand_increase_pct": "invalid"},
+            {"demand_increase_pct": -101},
+            {"extra_lead_days": -1},
+            {"extra_lead_days": 366},
+            {"current_stock_override": -1},
+            {"safety_stock_override": -1},
+        ]
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                resp = self.client.post(
+                    f"/api/simulation/{self.product.id}/", payload, format="json",
+                )
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_ai_chat_grounded_no_data_response(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.post("/api/ai/chat/", {"message": "How many unicorns do we have in stock?"})
