@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -19,7 +20,7 @@ class DemandForecastViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def forecast_view(request, pk):
-    product = Product.objects.get(pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     horizon = int(request.GET.get("horizon", 7))
     result = run_forecast(product, horizon_days=horizon, persist=True)
     return Response(DemandForecastSerializer(result).data)

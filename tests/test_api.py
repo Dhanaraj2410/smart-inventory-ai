@@ -66,6 +66,11 @@ class APITestCase(TestCase):
         resp = self.client.get("/api/predict/999999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_forecast_endpoint_returns_404_for_unknown_product(self):
+        self.client.force_authenticate(self.viewer)
+        resp = self.client.get("/api/forecast/999999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_recommendation_bulk_endpoint(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.get("/api/recommendations/bulk/")
