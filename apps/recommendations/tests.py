@@ -24,6 +24,14 @@ class ReorderCalculationTests(TestCase):
         avg = average_daily_sales(self.product, window_days=30)
         self.assertGreater(avg, 0)
 
+    def test_average_daily_sales_ignores_future_records(self):
+        SalesRecord.objects.create(
+            product=self.product, date=date.today() + timedelta(days=1),
+            quantity_sold=1000, unit_price=10,
+        )
+
+        self.assertEqual(average_daily_sales(self.product, window_days=30), 10)
+
     def test_reorder_point_formula(self):
         """Reorder point = avg_daily_demand * lead_time + safety_stock."""
         result = calculate_reorder(self.product)

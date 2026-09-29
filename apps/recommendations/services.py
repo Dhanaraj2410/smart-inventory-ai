@@ -17,10 +17,11 @@ def average_daily_sales(product, window_days=30):
     from django.utils import timezone
     from datetime import timedelta
 
-    since = timezone.now().date() - timedelta(days=window_days)
-    qs = SalesRecord.objects.filter(product=product, date__gte=since)
+    today = timezone.now().date()
+    since = today - timedelta(days=window_days)
+    qs = SalesRecord.objects.filter(product=product, date__gte=since, date__lte=today)
     total = sum(r.quantity_sold for r in qs)
-    days = max(1, (timezone.now().date() - since).days)
+    days = max(1, (today - since).days)
     return round(total / days, 3) if total else 0.0
 
 
