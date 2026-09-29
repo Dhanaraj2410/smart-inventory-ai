@@ -7,10 +7,14 @@ seasonally-naive projection built from recent sales history so the rest of
 the app (recommendations, dashboard, product detail) keeps working end to
 end before the ML pipeline has been run.
 """
+import logging
+
 import numpy as np
 
 from apps.sales.models import SalesRecord
 from .models import DemandForecast
+
+logger = logging.getLogger(__name__)
 
 
 def _fallback_forecast(product, horizon_days):
@@ -41,6 +45,11 @@ def run_forecast(product, horizon_days=7, persist=True):
         from ml.prediction.predict import predict_demand
         values = predict_demand(product, horizon_days)
     except Exception:
+        logger.warning(
+            "ML demand forecast failed for product %s; using seasonal fallback.",
+            product.pk,
+            exc_info=True,
+        )
         values = None
 
     if not values:
