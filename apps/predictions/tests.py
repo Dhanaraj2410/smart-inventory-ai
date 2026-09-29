@@ -1,4 +1,5 @@
 from django.test import TestCase
+from unittest.mock import patch
 from apps.products.models import Product
 from apps.predictions.services import run_prediction, _rule_based_risk
 
@@ -21,3 +22,15 @@ class StockoutPredictionTests(TestCase):
         result = run_prediction(self.product, persist=True)
         self.assertEqual(result.product_id, self.product.id)
         self.assertIn(result.risk_level, ("LOW", "MEDIUM", "HIGH"))
+
+    @patch(
+        "ml.prediction.predict.predict_stockout_risk",
+        side_effect=RuntimeError("model unavailable"),
+    )
+    def test_run_prediction_logs_ml_fallback(self, predict):
+        with self.assertLogs("apps.predictions.services", level="WARNING") as logs:
+            result = run_prediction(self.product, persist=False)
+
+        self.assertIn("using rule-based fallback", logs.output[0])
+        self.assertIn("RuntimeError: model unavailable", logs.output[0])
+        self.assertIn(result["risk_level"], ("LOW", "MEDIUM", "HIGH"))

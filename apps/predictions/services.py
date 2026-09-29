@@ -7,7 +7,11 @@ signals the ML model uses (stock-to-demand ratio, lead time, recent growth)
 — so the rest of the app works before a model has been trained, and so the
 fallback's own reasoning is always inspectable rather than a black box.
 """
+import logging
+
 from .models import PredictionHistory
+
+logger = logging.getLogger(__name__)
 
 
 def _rule_based_risk(product):
@@ -62,7 +66,11 @@ def run_prediction(product, horizon_days=7, persist=True):
             risk_level, probability, factors = result["risk_level"], result["probability"], result["factors"]
             model_name = "RandomForestClassifier"
     except Exception:
-        pass
+        logger.warning(
+            "ML stockout prediction failed for product %s; using rule-based fallback.",
+            product.pk,
+            exc_info=True,
+        )
 
     if risk_level is None:
         risk_level, probability, factors = _rule_based_risk(product)
