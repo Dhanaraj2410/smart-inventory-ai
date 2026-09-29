@@ -100,6 +100,7 @@ class APITestCase(TestCase):
         invalid_payloads = [
             {"demand_increase_pct": "invalid"},
             {"demand_increase_pct": -101},
+            {"demand_increase_pct": 1001},
             {"extra_lead_days": -1},
             {"extra_lead_days": 366},
             {"current_stock_override": -1},

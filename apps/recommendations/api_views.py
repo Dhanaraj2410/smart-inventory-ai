@@ -12,7 +12,7 @@ from .services import build_recommendation, bulk_recommendations
 
 
 class SimulationInputSerializer(serializers.Serializer):
-    demand_increase_pct = serializers.FloatField(default=0, min_value=-100)
+    demand_increase_pct = serializers.FloatField(default=0, min_value=-100, max_value=1000)
     extra_lead_days = serializers.IntegerField(default=0, min_value=0, max_value=365)
     current_stock_override = serializers.IntegerField(required=False, min_value=0)
     safety_stock_override = serializers.IntegerField(required=False, min_value=0)
