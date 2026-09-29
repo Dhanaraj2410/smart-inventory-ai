@@ -71,6 +71,13 @@ class APITestCase(TestCase):
         resp = self.client.get("/api/forecast/999999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_forecast_endpoint_rejects_invalid_horizon(self):
+        self.client.force_authenticate(self.viewer)
+        for horizon in ("invalid", "0", "366"):
+            with self.subTest(horizon=horizon):
+                resp = self.client.get(f"/api/forecast/{self.product.id}/?horizon={horizon}")
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_recommendation_bulk_endpoint(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.get("/api/recommendations/bulk/")
