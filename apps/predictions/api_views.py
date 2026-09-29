@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import serializers, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +9,10 @@ from apps.products.models import Product
 from .models import PredictionHistory, ModelPerformance, InventoryAlert
 from .serializers import PredictionHistorySerializer, ModelPerformanceSerializer, InventoryAlertSerializer
 from .services import run_prediction, bulk_predict
+
+
+class PredictionQuerySerializer(serializers.Serializer):
+    horizon = serializers.IntegerField(default=7, min_value=1, max_value=365)
 
 
 class PredictionHistoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -33,7 +37,9 @@ class InventoryAlertViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def predict_view(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    horizon = int(request.GET.get("horizon", 7))
+    query = PredictionQuerySerializer(data=request.query_params)
+    query.is_valid(raise_exception=True)
+    horizon = query.validated_data["horizon"]
     result = run_prediction(product, horizon_days=horizon, persist=True)
     return Response(PredictionHistorySerializer(result).data)
 
