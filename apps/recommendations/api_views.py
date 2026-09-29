@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -28,7 +29,7 @@ def bulk_recommendations_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def simulate_view(request, pk):
-    product = Product.objects.get(pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     payload = request.data
     result = build_recommendation(
         product, persist=False,

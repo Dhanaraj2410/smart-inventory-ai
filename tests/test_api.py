@@ -76,6 +76,11 @@ class APITestCase(TestCase):
         resp = self.client.get("/api/recommendations/bulk/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
+    def test_simulation_endpoint_returns_404_for_unknown_product(self):
+        self.client.force_authenticate(self.viewer)
+        resp = self.client.post("/api/simulation/999999/", {}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_ai_chat_grounded_no_data_response(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.post("/api/ai/chat/", {"message": "How many unicorns do we have in stock?"})
