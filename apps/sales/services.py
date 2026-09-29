@@ -74,9 +74,9 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
             qty = int(quantity)
             if qty < 0:
                 raise ValueError("quantity_sold cannot be negative")
-            price = float(row["unit_price"])
-            if price < 0:
-                raise ValueError("unit_price cannot be negative")
+            price = Decimal(row["unit_price"])
+            if not price.is_finite() or price < 0:
+                raise ValueError("unit_price must be a finite, non-negative amount")
 
             warehouse = None
             wname = (row.get("warehouse") or "").strip()
