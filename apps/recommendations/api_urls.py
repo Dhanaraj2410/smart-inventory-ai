@@ -5,7 +5,7 @@ from .api_views import ReorderRecommendationViewSet, bulk_recommendations_view, 
 router = DefaultRouter()
 router.register("recommendations", ReorderRecommendationViewSet, basename="recommendation")
 
-urlpatterns = router.urls + [
+urlpatterns = [
     path("recommendations/bulk/", bulk_recommendations_view, name="recommendations-bulk"),
     path("simulation/<int:pk>/", simulate_view, name="simulation"),
-]
+] + router.urls
