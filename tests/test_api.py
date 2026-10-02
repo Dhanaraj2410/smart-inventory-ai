@@ -76,6 +76,18 @@ class APITestCase(TestCase):
                 self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Supplier.objects.count(), 0)
 
+    def test_sales_api_rejects_negative_unit_price(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post("/api/sales/", {
+            "product": self.product.id,
+            "date": "2025-01-01",
+            "quantity_sold": 1,
+            "unit_price": "-0.01",
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_prediction_endpoint(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.get(f"/api/predict/{self.product.id}/")
