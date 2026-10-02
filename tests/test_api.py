@@ -6,6 +6,7 @@ from rest_framework import status
 
 from apps.accounts.models import User
 from apps.products.models import Product, Supplier
+from apps.predictions.models import PredictionHistory
 
 
 class APITestCase(TestCase):
@@ -80,6 +81,17 @@ class APITestCase(TestCase):
         resp = self.client.get(f"/api/predict/{self.product.id}/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("risk_level", resp.data)
+
+    def test_prediction_endpoint_reuses_recent_result(self):
+        self.client.force_authenticate(self.viewer)
+
+        first = self.client.get(f"/api/predict/{self.product.id}/")
+        second = self.client.get(f"/api/predict/{self.product.id}/")
+
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(first.data["id"], second.data["id"])
+        self.assertEqual(PredictionHistory.objects.count(), 1)
 
     def test_prediction_endpoint_returns_404_for_unknown_product(self):
         self.client.force_authenticate(self.viewer)

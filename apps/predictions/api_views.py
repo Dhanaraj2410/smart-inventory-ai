@@ -8,7 +8,7 @@ from apps.accounts.permissions import ReadOnlyOrManager, IsAdmin
 from apps.products.models import Product
 from .models import PredictionHistory, ModelPerformance, InventoryAlert
 from .serializers import PredictionHistorySerializer, ModelPerformanceSerializer, InventoryAlertSerializer
-from .services import run_prediction, bulk_predict
+from .services import get_latest_risk, bulk_predict
 
 
 class PredictionQuerySerializer(serializers.Serializer):
@@ -40,7 +40,7 @@ def predict_view(request, pk):
     query = PredictionQuerySerializer(data=request.query_params)
     query.is_valid(raise_exception=True)
     horizon = query.validated_data["horizon"]
-    result = run_prediction(product, horizon_days=horizon, persist=True)
+    result = get_latest_risk(product, horizon_days=horizon)
     return Response(PredictionHistorySerializer(result).data)
 
 
