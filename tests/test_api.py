@@ -26,6 +26,7 @@ class APITestCase(TestCase):
     def test_product_list_requires_auth(self):
         resp = self.client.get("/api/products/")
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(resp["WWW-Authenticate"], "Token")
 
     def test_product_list_authenticated(self):
         self.client.force_authenticate(self.viewer)
