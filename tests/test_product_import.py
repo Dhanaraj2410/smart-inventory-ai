@@ -31,3 +31,20 @@ class ProductCsvImportTests(TestCase):
             "current_stock must be a non-negative whole number",
             status_code=200,
         )
+
+    def test_import_rejects_maximum_stock_below_minimum(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku,name,minimum_stock,maximum_stock\nCSV-002,Widget,10,5\n",
+            content_type="text/csv",
+        )
+
+        response = self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Product.objects.filter(sku="CSV-002").exists())
+        self.assertContains(
+            self.client.get(reverse("products:import")),
+            "maximum_stock cannot be less than minimum_stock",
+            status_code=200,
+        )

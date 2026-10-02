@@ -160,6 +160,8 @@ def product_import(request):
                 supplier_lead_time = _parse_non_negative_integer(
                     row.get("supplier_lead_time"), "supplier_lead_time", 5
                 )
+                if maximum_stock < minimum_stock:
+                    raise ValueError("maximum_stock cannot be less than minimum_stock.")
                 category, _ = Category.objects.get_or_create(name=row.get("category", "General").strip() or "General")
                 supplier = None
                 if row.get("supplier"):
