@@ -1,5 +1,7 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
 
 from apps.products.models import Product
 from apps.sales.models import SalesRecord
@@ -58,3 +60,17 @@ class SalesCsvImportTests(TestCase):
                 self.assertEqual(log.rows_created, 0)
                 self.assertEqual(log.rows_failed, 1)
         self.assertFalse(SalesRecord.objects.exists())
+
+    def test_import_rejects_future_sales_dates(self):
+        future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
+        csv_data = (
+            "date,product_id,quantity_sold,unit_price\n"
+            f"{future_date},CSV-001,2,3.50\n"
+        )
+        uploaded_file = SimpleUploadedFile("sales.csv", csv_data.encode())
+
+        log = validate_and_import_csv(uploaded_file)
+
+        self.assertEqual(log.rows_created, 0)
+        self.assertEqual(log.rows_failed, 1)
+        self.assertIn("date cannot be in the future", log.errors)

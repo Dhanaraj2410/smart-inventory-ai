@@ -12,6 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 
 from apps.products.models import Product, Warehouse
 from .models import SalesRecord, SalesImportLog
@@ -67,6 +68,8 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
             if not row.get("date") or not row.get("product_id"):
                 raise ValueError("Missing date or product_id")
             date = _parse_date(row["date"])
+            if date > timezone.localdate():
+                raise ValueError("date cannot be in the future")
             product = _resolve_product(row["product_id"], product_cache)
             quantity = Decimal(row["quantity_sold"])
             if not quantity.is_finite() or quantity != quantity.to_integral_value():

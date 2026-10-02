@@ -1,4 +1,7 @@
 """API-level tests: product, prediction, forecast, recommendation, and AI endpoints."""
+from datetime import timedelta
+
+from django.utils import timezone
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -84,6 +87,18 @@ class APITestCase(TestCase):
             "date": "2025-01-01",
             "quantity_sold": 1,
             "unit_price": "-0.01",
+        }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_sales_api_rejects_future_dates(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post("/api/sales/", {
+            "product": self.product.id,
+            "date": (timezone.localdate() + timedelta(days=1)).isoformat(),
+            "quantity_sold": 1,
+            "unit_price": "1.00",
         }, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
