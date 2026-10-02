@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from apps.accounts.models import User
-from apps.products.models import Product
+from apps.products.models import Product, Supplier
 
 
 class APITestCase(TestCase):
@@ -63,6 +63,17 @@ class APITestCase(TestCase):
             "unit_price": "-1.00",
         })
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_supplier_reliability_score_must_be_between_zero_and_one(self):
+        self.client.force_authenticate(self.admin)
+        for score in ("-0.01", "1.01"):
+            with self.subTest(score=score):
+                resp = self.client.post("/api/suppliers/", {
+                    "name": f"Supplier {score}",
+                    "reliability_score": score,
+                })
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Supplier.objects.count(), 0)
 
     def test_prediction_endpoint(self):
         self.client.force_authenticate(self.viewer)

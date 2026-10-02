@@ -1,6 +1,6 @@
 from django.db import models
 from django.urls import reverse
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class Category(models.Model):
@@ -21,8 +21,13 @@ class Supplier(models.Model):
     contact_email = models.EmailField(blank=True)
     contact_phone = models.CharField(max_length=30, blank=True)
     average_lead_time_days = models.PositiveIntegerField(default=5)
-    reliability_score = models.DecimalField(max_digits=4, decimal_places=2, default=0.9,
-                                             help_text="0-1, on-time delivery reliability")
+    reliability_score = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=0.9,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="0-1, on-time delivery reliability",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
