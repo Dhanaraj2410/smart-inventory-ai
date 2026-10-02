@@ -5,6 +5,7 @@ from apps.products.models import Product
 from apps.sales.models import SalesRecord
 from django.utils import timezone
 from datetime import timedelta
+from apps.dashboard.services import get_sales_trend
 
 
 class AuthenticationTests(TestCase):
@@ -57,3 +58,21 @@ class ProductAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["stats"]["average_daily_sales"], 1.0)
+
+    def test_sales_trend_uses_exact_window_and_excludes_future_records(self):
+        today = timezone.localdate()
+        SalesRecord.objects.create(product=self.product, date=today, quantity_sold=10, unit_price="1.00")
+        SalesRecord.objects.create(
+            product=self.product, date=today - timedelta(days=7), quantity_sold=100, unit_price="1.00",
+        )
+        SalesRecord.objects.create(
+            product=self.product, date=today + timedelta(days=1), quantity_sold=900, unit_price="1.00",
+        )
+
+        trend = get_sales_trend(days=7)
+
+        self.assertEqual(trend, [{"date": today.isoformat(), "units": 10, "revenue": 10.0}])
+
+    def test_sales_trend_rejects_non_positive_windows(self):
+        with self.assertRaisesMessage(ValueError, "days must be a positive integer"):
+            get_sales_trend(days=0)

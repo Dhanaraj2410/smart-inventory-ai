@@ -67,8 +67,11 @@ def get_risk_breakdown():
 
 
 def get_sales_trend(days=30):
-    since = timezone.now().date() - timedelta(days=days)
-    qs = (SalesRecord.objects.filter(date__gte=since)
+    if days < 1:
+        raise ValueError("days must be a positive integer")
+    today = timezone.localdate()
+    since = today - timedelta(days=days - 1)
+    qs = (SalesRecord.objects.filter(date__gte=since, date__lte=today)
           .values("date").annotate(units=Sum("quantity_sold"),
                                     revenue=Sum(F("quantity_sold") * F("unit_price")))
           .order_by("date"))
