@@ -24,8 +24,9 @@ def get_dashboard_stats():
     for p in products:
         status_counts[p.stock_status] += 1
 
-    since_30 = timezone.now().date() - timedelta(days=30)
-    recent_sales = SalesRecord.objects.filter(date__gte=since_30)
+    today = timezone.localdate()
+    since_30 = today - timedelta(days=29)
+    recent_sales = SalesRecord.objects.filter(date__gte=since_30, date__lte=today)
     total_recent_units = recent_sales.aggregate(s=Sum("quantity_sold"))["s"] or 0
     avg_daily_sales = round(total_recent_units / 30, 2)
 

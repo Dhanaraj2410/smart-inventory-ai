@@ -2,6 +2,9 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from apps.accounts.models import User
 from apps.products.models import Product
+from apps.sales.models import SalesRecord
+from django.utils import timezone
+from datetime import timedelta
 
 
 class AuthenticationTests(TestCase):
@@ -39,3 +42,18 @@ class ProductAPITests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn("stats", resp.json())
         self.assertGreaterEqual(resp.json()["stats"]["total_products"], 1)
+
+    def test_dashboard_average_daily_sales_uses_exact_recent_window(self):
+        today = timezone.localdate()
+        SalesRecord.objects.create(product=self.product, date=today, quantity_sold=30, unit_price="1.00")
+        SalesRecord.objects.create(
+            product=self.product, date=today - timedelta(days=30), quantity_sold=300, unit_price="1.00",
+        )
+        SalesRecord.objects.create(
+            product=self.product, date=today + timedelta(days=1), quantity_sold=900, unit_price="1.00",
+        )
+
+        response = self.client.get("/api/dashboard/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["stats"]["average_daily_sales"], 1.0)
