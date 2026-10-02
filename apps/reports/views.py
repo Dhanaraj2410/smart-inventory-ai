@@ -34,6 +34,17 @@ def generate_report(request):
         data["inventory_summary"] = get_dashboard_stats()
     if "stockout_risk" in selected:
         data["stockout_risk"] = bulk_predict(persist=False)
+    if "demand_forecast" in selected:
+        from apps.forecasting.services import run_forecast
+
+        data["demand_forecast"] = [
+            {
+                "sku": product.sku,
+                "horizon_days": 7,
+                "forecast": run_forecast(product, horizon_days=7, persist=False)["values"],
+            }
+            for product in Product.objects.filter(is_active=True)
+        ]
     if "reorder_recommendations" in selected:
         data["reorder_recommendations"] = bulk_recommendations()
     if "overstock_analysis" in selected:
