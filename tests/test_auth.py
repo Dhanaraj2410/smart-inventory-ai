@@ -33,6 +33,24 @@ class AuthTests(TestCase):
         resp = self.client.get(reverse("dashboard:home"))
         self.assertEqual(resp.status_code, 302)
 
+    def test_logout_requires_post(self):
+        user = User.objects.create_user(username="logoutuser", password="pass12345")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("accounts:logout"))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_logout_post_ends_session(self):
+        user = User.objects.create_user(username="logoutuser", password="pass12345")
+        self.client.force_login(user)
+
+        response = self.client.post(reverse("accounts:logout"))
+
+        self.assertRedirects(response, reverse("accounts:login"))
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
     def test_manager_role_permission(self):
         from apps.accounts.models import User as U
         admin = U.objects.create_user(username="a1", password="p1", role=U.Role.ADMIN)

@@ -4,6 +4,7 @@ from django.contrib.auth.views import LoginView, PasswordResetView, PasswordRese
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from .forms import RegisterForm, LoginForm, ProfileForm
 
 
@@ -25,6 +26,7 @@ def register_view(request):
     return render(request, "accounts/register.html", {"form": form})
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")
