@@ -9,7 +9,7 @@ Expected columns (header row required):
 import csv
 import io
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 from django.utils import timezone
@@ -91,7 +91,7 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
             to_create.append(SalesRecord(
                 product=product, date=date, quantity_sold=qty, unit_price=price, warehouse=warehouse,
             ))
-        except Exception as e:
+        except (InvalidOperation, KeyError, TypeError, ValueError) as e:
             errors.append(f"Row {i}: {e}")
 
     with transaction.atomic():

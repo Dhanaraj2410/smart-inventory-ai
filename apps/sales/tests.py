@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
@@ -74,3 +76,14 @@ class SalesCsvImportTests(TestCase):
         self.assertEqual(log.rows_created, 0)
         self.assertEqual(log.rows_failed, 1)
         self.assertIn("date cannot be in the future", log.errors)
+
+    @patch("apps.sales.services._resolve_product", side_effect=RuntimeError("database unavailable"))
+    def test_import_propagates_unexpected_row_processing_errors(self, resolve_product):
+        csv_data = (
+            "date,product_id,quantity_sold,unit_price\n"
+            "2024-01-01,CSV-001,2,3.50\n"
+        )
+        uploaded_file = SimpleUploadedFile("sales.csv", csv_data.encode())
+
+        with self.assertRaisesMessage(RuntimeError, "database unavailable"):
+            validate_and_import_csv(uploaded_file)
