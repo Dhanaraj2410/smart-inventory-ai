@@ -21,16 +21,18 @@ def _fallback_forecast(product, horizon_days):
     from django.utils import timezone
     from datetime import timedelta
 
-    since = timezone.now().date() - timedelta(days=28)
-    qs = SalesRecord.objects.filter(product=product, date__gte=since).order_by("date")
-    if not qs.exists():
+    today = timezone.localdate()
+    since = today - timedelta(days=28)
+    records = list(SalesRecord.objects.filter(
+        product=product, date__gte=since, date__lte=today,
+    ).order_by("date"))
+    if not records:
         return [0.0] * horizon_days
     by_dow = {i: [] for i in range(7)}
-    for r in qs:
+    for r in records:
         by_dow[r.date.weekday()].append(r.quantity_sold)
     dow_avg = {k: (sum(v) / len(v) if v else 0.0) for k, v in by_dow.items()}
     overall_avg = sum(dow_avg.values()) / 7 or 1.0
-    today = timezone.now().date()
     values = []
     for i in range(1, horizon_days + 1):
         d = today + timedelta(days=i)
