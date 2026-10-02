@@ -146,9 +146,17 @@ def product_import(request):
         decoded = io.StringIO(f.read().decode("utf-8-sig"))
         reader = csv.DictReader(decoded)
         required = {"sku", "name"}
-        if not required.issubset(set(reader.fieldnames or [])):
+        if not reader.fieldnames:
+            messages.error(request, "CSV must include a header row.")
+            return redirect("products:import")
+        headers = [column.strip().lower() for column in reader.fieldnames]
+        if len(headers) != len(set(headers)):
+            messages.error(request, "CSV contains duplicate column names.")
+            return redirect("products:import")
+        if not required.issubset(set(headers)):
             messages.error(request, f"CSV must include columns: {', '.join(required)}")
             return redirect("products:import")
+        reader.fieldnames = headers
 
         created, updated, errors = 0, 0, []
         for i, row in enumerate(reader, start=2):

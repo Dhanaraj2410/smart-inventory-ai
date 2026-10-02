@@ -15,6 +15,35 @@ class ProductCsvImportTests(TestCase):
         )
         self.client.force_login(self.manager)
 
+    def test_import_accepts_case_insensitive_headers(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"SKU,Name\nCSV-003,Widget\n",
+            content_type="text/csv",
+        )
+
+        response = self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Product.objects.filter(sku="CSV-003").exists())
+
+    def test_import_rejects_duplicate_headers(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku,SKU,name\nCSV-004,OTHER,Widget\n",
+            content_type="text/csv",
+        )
+
+        response = self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Product.objects.exists())
+        self.assertContains(
+            self.client.get(reverse("products:import")),
+            "CSV contains duplicate column names",
+            status_code=200,
+        )
+
     def test_import_rejects_fractional_stock_without_creating_product(self):
         uploaded_file = SimpleUploadedFile(
             "products.csv",
