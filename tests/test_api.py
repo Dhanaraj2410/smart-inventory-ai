@@ -56,6 +56,14 @@ class APITestCase(TestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_product_unit_price_cannot_be_negative(self):
+        self.client.force_authenticate(self.admin)
+        resp = self.client.post("/api/products/", {
+            "sku": "NEGATIVE-PRICE", "name": "Negative Price",
+            "unit_price": "-1.00",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_prediction_endpoint(self):
         self.client.force_authenticate(self.viewer)
         resp = self.client.get(f"/api/predict/{self.product.id}/")
