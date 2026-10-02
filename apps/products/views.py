@@ -1,5 +1,6 @@
 import csv
 import io
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,6 +12,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
 from .models import Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
+
+
+def _parse_non_negative_integer(value, field_name, default):
+    raw = str(value or "").strip()
+    if not raw:
+        return default
+    try:
+        parsed = Decimal(raw)
+    except InvalidOperation as exc:
+        raise ValueError(f"{field_name} must be a whole number.") from exc
+    if not parsed.is_finite() or parsed < 0 or parsed != parsed.to_integral_value():
+        raise ValueError(f"{field_name} must be a non-negative whole number.")
+    return int(parsed)
 
 
 @login_required
@@ -139,6 +153,13 @@ def product_import(request):
         created, updated, errors = 0, 0, []
         for i, row in enumerate(reader, start=2):
             try:
+                current_stock = _parse_non_negative_integer(row.get("current_stock"), "current_stock", 0)
+                minimum_stock = _parse_non_negative_integer(row.get("minimum_stock"), "minimum_stock", 10)
+                maximum_stock = _parse_non_negative_integer(row.get("maximum_stock"), "maximum_stock", 500)
+                safety_stock = _parse_non_negative_integer(row.get("safety_stock"), "safety_stock", 20)
+                supplier_lead_time = _parse_non_negative_integer(
+                    row.get("supplier_lead_time"), "supplier_lead_time", 5
+                )
                 category, _ = Category.objects.get_or_create(name=row.get("category", "General").strip() or "General")
                 supplier = None
                 if row.get("supplier"):
@@ -152,11 +173,11 @@ def product_import(request):
                     defaults=dict(
                         name=row["name"].strip(),
                         category=category, supplier=supplier, warehouse=warehouse,
-                        current_stock=int(float(row.get("current_stock") or 0)),
-                        minimum_stock=int(float(row.get("minimum_stock") or 10)),
-                        maximum_stock=int(float(row.get("maximum_stock") or 500)),
-                        safety_stock=int(float(row.get("safety_stock") or 20)),
-                        supplier_lead_time=int(float(row.get("supplier_lead_time") or 5)),
+                        current_stock=current_stock,
+                        minimum_stock=minimum_stock,
+                        maximum_stock=maximum_stock,
+                        safety_stock=safety_stock,
+                        supplier_lead_time=supplier_lead_time,
                         unit_price=float(row.get("unit_price") or 0),
                     ),
                 )
