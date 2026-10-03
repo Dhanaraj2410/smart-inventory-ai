@@ -91,7 +91,7 @@ def product_list(request):
 
 @login_required
 def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(Product, pk=pk, is_active=True)
     from apps.predictions.services import get_latest_risk
     from apps.forecasting.services import get_latest_forecast
     from apps.recommendations.services import build_recommendation

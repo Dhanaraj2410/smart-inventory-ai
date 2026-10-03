@@ -45,3 +45,14 @@ class ProductFormTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Maximum stock cannot be less than minimum stock")
         self.assertFalse(Product.objects.filter(sku="FORM-002").exists())
+
+    def test_inactive_product_is_not_available_on_detail_page(self):
+        product = Product.objects.create(
+            sku="FORM-003",
+            name="Archived Product",
+            is_active=False,
+        )
+
+        response = self.client.get(reverse("products:detail", args=[product.pk]))
+
+        self.assertEqual(response.status_code, 404)
