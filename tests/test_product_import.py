@@ -120,3 +120,19 @@ class ProductCsvImportTests(TestCase):
                 self.client.post(reverse("products:import"), {"file": uploaded_file})
 
         self.assertFalse(Product.objects.exists())
+
+    def test_import_rejects_rows_with_extra_columns(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku,name\nCSV-007,Widget,unexpected\n",
+            content_type="text/csv",
+        )
+
+        self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertFalse(Product.objects.filter(sku="CSV-007").exists())
+        self.assertContains(
+            self.client.get(reverse("products:import")),
+            "unexpected number of columns",
+            status_code=200,
+        )

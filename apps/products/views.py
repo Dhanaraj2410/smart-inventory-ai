@@ -160,6 +160,8 @@ def product_import(request):
         created, updated, errors = 0, 0, []
         for i, row in enumerate(reader, start=2):
             try:
+                if None in row or any(value is None for value in row.values()):
+                    raise ValueError("row has an unexpected number of columns.")
                 sku = (row.get("sku") or "").strip()
                 name = (row.get("name") or "").strip()
                 if not sku:
