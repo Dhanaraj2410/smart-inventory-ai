@@ -141,8 +141,11 @@ def product_delete(request, pk):
 def product_import(request):
     """Bulk import products from CSV: sku,name,category,supplier,warehouse,
     current_stock,minimum_stock,maximum_stock,safety_stock,supplier_lead_time,unit_price"""
-    if request.method == "POST" and request.FILES.get("file"):
-        f = request.FILES["file"]
+    if request.method == "POST":
+        f = request.FILES.get("file")
+        if not f:
+            messages.error(request, "Choose a CSV file to import.")
+            return redirect("products:import")
         decoded = io.StringIO(f.read().decode("utf-8-sig"))
         reader = csv.DictReader(decoded)
         required = {"sku", "name"}

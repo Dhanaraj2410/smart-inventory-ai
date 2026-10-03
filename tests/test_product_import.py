@@ -30,6 +30,12 @@ class ProductCsvImportTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Product.objects.filter(sku="CSV-003").exists())
 
+    def test_import_without_file_shows_validation_message(self):
+        response = self.client.post(reverse("products:import"), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choose a CSV file to import.")
+
     def test_import_rejects_duplicate_headers(self):
         uploaded_file = SimpleUploadedFile(
             "products.csv",
