@@ -11,6 +11,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
+from .forms import ProductForm
 from .models import Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
 
 
@@ -82,28 +83,26 @@ def product_detail(request, pk):
 @login_required
 @role_required(User.Role.ADMIN, User.Role.MANAGER)
 def product_create(request):
+    form = ProductForm(request.POST or None)
     if request.method == "POST":
-        product = _save_product_from_post(request, Product())
-        messages.success(request, f"Product {product.sku} created.")
-        return redirect("products:detail", pk=product.pk)
-    return render(request, "products/form.html", {
-        "categories": Category.objects.all(), "suppliers": Supplier.objects.all(),
-        "warehouses": Warehouse.objects.all(),
-    })
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f"Product {product.sku} created.")
+            return redirect("products:detail", pk=product.pk)
+    return render(request, "products/form.html", {"form": form})
 
 
 @login_required
 @role_required(User.Role.ADMIN, User.Role.MANAGER)
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
+    form = ProductForm(request.POST or None, instance=product)
     if request.method == "POST":
-        product = _save_product_from_post(request, product)
-        messages.success(request, f"Product {product.sku} updated.")
-        return redirect("products:detail", pk=product.pk)
-    return render(request, "products/form.html", {
-        "product": product, "categories": Category.objects.all(),
-        "suppliers": Supplier.objects.all(), "warehouses": Warehouse.objects.all(),
-    })
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f"Product {product.sku} updated.")
+            return redirect("products:detail", pk=product.pk)
+    return render(request, "products/form.html", {"form": form, "product": product})
 
 
 @login_required
@@ -116,24 +115,6 @@ def product_delete(request, pk):
         messages.success(request, f"Product {product.sku} deleted.")
         return redirect("products:list")
     return render(request, "products/confirm_delete.html", {"product": product})
-
-
-def _save_product_from_post(request, product):
-    p = request.POST
-    product.sku = p.get("sku", product.sku)
-    product.name = p.get("name", product.name)
-    product.description = p.get("description", "")
-    product.category_id = p.get("category") or None
-    product.supplier_id = p.get("supplier") or None
-    product.warehouse_id = p.get("warehouse") or None
-    product.current_stock = int(p.get("current_stock") or 0)
-    product.minimum_stock = int(p.get("minimum_stock") or 0)
-    product.maximum_stock = int(p.get("maximum_stock") or 0)
-    product.safety_stock = int(p.get("safety_stock") or 0)
-    product.supplier_lead_time = int(p.get("supplier_lead_time") or 5)
-    product.unit_price = p.get("unit_price") or 0
-    product.save()
-    return product
 
 
 @login_required
