@@ -1,3 +1,6 @@
+import logging
+
+from kombu.exceptions import OperationalError
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
@@ -9,6 +12,8 @@ from apps.products.models import Product
 from .models import PredictionHistory, ModelPerformance, InventoryAlert
 from .serializers import PredictionHistorySerializer, ModelPerformanceSerializer, InventoryAlertSerializer
 from .services import get_latest_risk, bulk_predict
+
+logger = logging.getLogger(__name__)
 
 
 class PredictionQuerySerializer(serializers.Serializer):
@@ -60,7 +65,8 @@ def train_models_view(request):
         from .tasks import retrain_models_task
         retrain_models_task.delay()
         return Response({"status": "training_started_async"})
-    except Exception:
+    except OperationalError as exc:
+        logger.warning("Celery broker unavailable; training models synchronously: %s", exc)
         from ml.training.train_stockout_model import train_stockout_model
         from ml.training.train_demand_model import train_demand_model
         stockout = train_stockout_model()

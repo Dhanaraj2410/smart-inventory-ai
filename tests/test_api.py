@@ -1,6 +1,9 @@
 """API-level tests: product, prediction, forecast, recommendation, and AI endpoints."""
+from unittest.mock import patch
+
 from datetime import timedelta
 
+from kombu.exceptions import OperationalError
 from django.utils import timezone
 from django.test import TestCase
 from django.urls import reverse
@@ -178,3 +181,29 @@ class APITestCase(TestCase):
         resp = self.client.post("/api/ai/chat/", {"message": "How many unicorns do we have in stock?"})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("couldn't find", resp.data["answer"].lower())
+
+    @patch("apps.predictions.tasks.retrain_models_task.delay", side_effect=OperationalError("broker down"))
+    @patch("ml.training.train_stockout_model.train_stockout_model", return_value={"trained": "stockout"})
+    @patch("ml.training.train_demand_model.train_demand_model", return_value={"trained": "demand"})
+    def test_training_api_falls_back_when_broker_is_unavailable(self, train_demand, train_stockout, delay):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post("/api/models/train/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "trained_sync")
+        self.assertEqual(response.data["stockout"], {"trained": "stockout"})
+        train_stockout.assert_called_once_with()
+        train_demand.assert_called_once_with()
+
+    @patch("apps.predictions.tasks.retrain_models_task.delay", side_effect=RuntimeError("unexpected failure"))
+    @patch("ml.training.train_stockout_model.train_stockout_model")
+    @patch("ml.training.train_demand_model.train_demand_model")
+    def test_training_api_does_not_hide_unexpected_queue_errors(self, train_demand, train_stockout, delay):
+        self.client.force_authenticate(self.admin)
+
+        with self.assertRaisesMessage(RuntimeError, "unexpected failure"):
+            self.client.post("/api/models/train/")
+
+        train_stockout.assert_not_called()
+        train_demand.assert_not_called()
