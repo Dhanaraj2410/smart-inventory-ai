@@ -74,6 +74,8 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
     for i, row in enumerate(reader, start=2):  # header is row 1
         processed += 1
         try:
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError("row has an unexpected number of columns")
             if not row.get("date") or not row.get("product_id"):
                 raise ValueError("Missing date or product_id")
             date = _parse_date(row["date"])
