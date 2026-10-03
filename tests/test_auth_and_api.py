@@ -1,4 +1,5 @@
 from django.test import TestCase, Client
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from apps.accounts.models import User
 from apps.products.models import Product
@@ -101,3 +102,38 @@ class ProductAPITests(TestCase):
     def test_sales_trend_rejects_non_positive_windows(self):
         with self.assertRaisesMessage(ValueError, "days must be a positive integer"):
             get_sales_trend(days=0)
+
+
+class BulkPredictionUploadTests(TestCase):
+    def setUp(self):
+        viewer = User.objects.create_user(
+            username="bulk-prediction-viewer",
+            password="test-password",
+            role=User.Role.VIEWER,
+        )
+        self.client = Client()
+        self.client.force_login(viewer)
+
+    def test_invalid_utf8_upload_shows_validation_message(self):
+        uploaded_file = SimpleUploadedFile("products.csv", b"\xff\xfe")
+
+        response = self.client.post(
+            reverse("predictions:bulk"),
+            {"file": uploaded_file},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSV must be encoded as UTF-8.")
+
+    def test_malformed_rows_are_reported(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku\nUNKNOWN-1,EXTRA\n",
+            content_type="text/csv",
+        )
+
+        response = self.client.post(reverse("predictions:bulk"), {"file": uploaded_file})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "unexpected number of columns")

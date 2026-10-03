@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -71,16 +72,43 @@ def bulk_upload_predict(request):
     from django.http import HttpResponse
     from apps.recommendations.services import calculate_reorder
 
-    if request.method == "POST" and request.FILES.get("file"):
-        f = request.FILES["file"]
-        decoded = io.StringIO(f.read().decode("utf-8-sig"))
+    if request.method == "POST":
+        f = request.FILES.get("file")
+        if not f:
+            messages.error(request, "Choose a CSV file to upload.")
+            return redirect("predictions:bulk")
+        try:
+            text = f.read().decode("utf-8-sig")
+        except UnicodeDecodeError:
+            messages.error(request, "CSV must be encoded as UTF-8.")
+            return redirect("predictions:bulk")
+        decoded = io.StringIO(text)
         reader = csv.DictReader(decoded)
+        if not reader.fieldnames:
+            messages.error(request, "CSV must include a header row.")
+            return redirect("predictions:bulk")
+        headers = [column.strip().lower() for column in reader.fieldnames]
+        if len(headers) != len(set(headers)):
+            messages.error(request, "CSV contains duplicate column names.")
+            return redirect("predictions:bulk")
+        if not {"product_id", "sku"}.intersection(headers):
+            messages.error(request, "CSV must include a product_id or sku column.")
+            return redirect("predictions:bulk")
+        reader.fieldnames = headers
         rows = []
-        for row in reader:
+        errors = []
+        for line_number, row in enumerate(reader, start=2):
+            if None in row or any(value is None for value in row.values()):
+                errors.append(f"Row {line_number}: unexpected number of columns.")
+                continue
             ident = (row.get("product_id") or row.get("sku") or "").strip()
+            if not ident:
+                errors.append(f"Row {line_number}: product_id or sku is required.")
+                continue
             product = Product.objects.filter(sku=ident).first() or \
                 (Product.objects.filter(pk=ident).first() if ident.isdigit() else None)
             if not product:
+                errors.append(f"Row {line_number}: product '{ident}' was not found.")
                 continue
             prediction = run_prediction(product, persist=False)
             reco = calculate_reorder(product)
@@ -102,6 +130,6 @@ def bulk_upload_predict(request):
                                   r["reorder_required"], r["recommended_quantity"]])
             return response
 
-        return render(request, "predictions/bulk_results.html", {"rows": rows})
+        return render(request, "predictions/bulk_results.html", {"rows": rows, "errors": errors})
 
     return render(request, "predictions/bulk_upload.html")

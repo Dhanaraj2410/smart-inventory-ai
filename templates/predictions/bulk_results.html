@@ -2,6 +2,7 @@
 {% block page_title %}Bulk Prediction Results{% endblock %}
 {% block content %}
 <p class="text-muted"><a href="{% url 'predictions:bulk' %}">&larr; Run another bulk prediction</a> (tick "download as CSV" to export).</p>
+{% for error in errors %}<div class="alert alert-warning">{{ error }}</div>{% endfor %}
 <div class="table-card">
 <table class="table table-hover mb-0">
   <thead class="table-light"><tr><th>SKU</th><th>Name</th><th>Risk</th><th>Probability</th><th>Reorder?</th><th>Recommended Qty</th></tr></thead>
