@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from apps.accounts.models import User
 from apps.products.models import Product
+from apps.predictions.models import InventoryAlert
 from apps.sales.models import SalesRecord
 from django.utils import timezone
 from datetime import timedelta
@@ -23,6 +24,30 @@ class AuthenticationTests(TestCase):
     def test_dashboard_requires_login(self):
         resp = self.client.get(reverse("dashboard:home"))
         self.assertEqual(resp.status_code, 302)
+
+    def test_resolving_an_alert_requires_post(self):
+        manager = User.objects.create_user(
+            username="alert-manager", password="test-password", role=User.Role.MANAGER,
+        )
+        product = Product.objects.create(sku="ALERT-1", name="Alert Product")
+        alert = InventoryAlert.objects.create(
+            product=product,
+            alert_type=InventoryAlert.AlertType.OUT_OF_STOCK,
+            message="Out of stock",
+        )
+        self.client.force_login(manager)
+
+        response = self.client.get(reverse("predictions:resolve_alert", args=[alert.pk]))
+
+        self.assertEqual(response.status_code, 405)
+        alert.refresh_from_db()
+        self.assertFalse(alert.is_resolved)
+
+        response = self.client.post(reverse("predictions:resolve_alert", args=[alert.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        alert.refresh_from_db()
+        self.assertTrue(alert.is_resolved)
 
 
 class ProductAPITests(TestCase):

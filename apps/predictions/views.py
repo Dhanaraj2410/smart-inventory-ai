@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
@@ -30,6 +31,7 @@ def alert_list(request):
 
 @login_required
 @role_required(User.Role.ADMIN, User.Role.MANAGER)
+@require_POST
 def resolve_alert(request, pk):
     alert = get_object_or_404(InventoryAlert, pk=pk)
     alert.is_resolved = True
