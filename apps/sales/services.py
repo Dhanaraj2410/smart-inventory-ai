@@ -51,7 +51,11 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
     Returns the created SalesImportLog instance.
     """
     raw = file_obj.read()
-    decoded = io.StringIO(raw.decode("utf-8-sig"))
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("CSV must be encoded as UTF-8.") from exc
+    decoded = io.StringIO(text)
     reader = csv.DictReader(decoded)
 
     if not reader.fieldnames:

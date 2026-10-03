@@ -57,6 +57,14 @@ class SalesCsvImportTests(TestCase):
         with self.assertRaisesMessage(ValueError, "duplicate column names"):
             validate_and_import_csv(uploaded_file)
 
+    def test_import_rejects_invalid_utf8(self):
+        uploaded_file = SimpleUploadedFile("sales.csv", b"\xff\xfe")
+
+        with self.assertRaisesMessage(ValueError, "encoded as UTF-8"):
+            validate_and_import_csv(uploaded_file)
+
+        self.assertFalse(SalesRecord.objects.exists())
+
     def test_import_rejects_fractional_quantities(self):
         csv_data = (
             "date,product_id,quantity_sold,unit_price\n"
