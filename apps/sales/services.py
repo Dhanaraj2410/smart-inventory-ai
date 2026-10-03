@@ -91,6 +91,13 @@ def validate_and_import_csv(file_obj, uploaded_by=None, file_name="upload.csv"):
             price = Decimal(row["unit_price"])
             if not price.is_finite() or price < 0:
                 raise ValueError("unit_price must be a finite, non-negative amount")
+            if price > Decimal("99999999.99"):
+                raise ValueError("unit_price cannot exceed 99999999.99")
+            try:
+                if price != price.quantize(Decimal("0.01")):
+                    raise ValueError("unit_price cannot have more than two decimal places")
+            except InvalidOperation as exc:
+                raise ValueError("unit_price must fit within 10 digits") from exc
 
             warehouse = None
             wname = (row.get("warehouse") or "").strip()

@@ -106,6 +106,21 @@ class SalesCsvImportTests(TestCase):
                 self.assertEqual(log.rows_failed, 1)
         self.assertFalse(SalesRecord.objects.exists())
 
+    def test_import_rejects_prices_outside_database_precision(self):
+        for price in ("3.501", "100000000.00"):
+            with self.subTest(price=price):
+                csv_data = (
+                    "date,product_id,quantity_sold,unit_price\n"
+                    f"2024-01-01,CSV-001,2,{price}\n"
+                )
+                uploaded_file = SimpleUploadedFile("sales.csv", csv_data.encode())
+
+                log = validate_and_import_csv(uploaded_file)
+
+                self.assertEqual(log.rows_created, 0)
+                self.assertEqual(log.rows_failed, 1)
+        self.assertFalse(SalesRecord.objects.exists())
+
     def test_import_rejects_future_sales_dates(self):
         future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
         csv_data = (
