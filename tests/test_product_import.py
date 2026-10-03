@@ -107,3 +107,16 @@ class ProductCsvImportTests(TestCase):
                 self.client.post(reverse("products:import"), {"file": uploaded_file})
 
                 self.assertFalse(Product.objects.filter(sku=sku).exists())
+
+    def test_import_rejects_blank_sku_and_name(self):
+        for row in (",Widget", "CSV-006,   "):
+            with self.subTest(row=row):
+                uploaded_file = SimpleUploadedFile(
+                    "products.csv",
+                    f"sku,name\n{row}\n".encode(),
+                    content_type="text/csv",
+                )
+
+                self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertFalse(Product.objects.exists())

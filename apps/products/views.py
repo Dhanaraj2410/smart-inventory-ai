@@ -160,6 +160,12 @@ def product_import(request):
         created, updated, errors = 0, 0, []
         for i, row in enumerate(reader, start=2):
             try:
+                sku = (row.get("sku") or "").strip()
+                name = (row.get("name") or "").strip()
+                if not sku:
+                    raise ValueError("sku cannot be blank.")
+                if not name:
+                    raise ValueError("name cannot be blank.")
                 unit_price = _parse_unit_price(row.get("unit_price"))
                 current_stock = _parse_non_negative_integer(row.get("current_stock"), "current_stock", 0)
                 minimum_stock = _parse_non_negative_integer(row.get("minimum_stock"), "minimum_stock", 10)
@@ -179,9 +185,9 @@ def product_import(request):
                     warehouse, _ = Warehouse.objects.get_or_create(name=row["warehouse"].strip())
 
                 obj, was_created = Product.objects.update_or_create(
-                    sku=row["sku"].strip(),
+                    sku=sku,
                     defaults=dict(
-                        name=row["name"].strip(),
+                        name=name,
                         category=category, supplier=supplier, warehouse=warehouse,
                         current_stock=current_stock,
                         minimum_stock=minimum_stock,
