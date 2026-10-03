@@ -28,6 +28,24 @@ def _parse_non_negative_integer(value, field_name, default):
     return int(parsed)
 
 
+def _parse_unit_price(value):
+    raw = str(value or "0").strip()
+    try:
+        price = Decimal(raw)
+    except InvalidOperation as exc:
+        raise ValueError("unit_price must be a finite, non-negative amount.") from exc
+    if not price.is_finite() or price < 0:
+        raise ValueError("unit_price must be a finite, non-negative amount.")
+    if price >= Decimal("100000000"):
+        raise ValueError("unit_price cannot exceed 99999999.99.")
+    try:
+        if price != price.quantize(Decimal("0.01")):
+            raise ValueError("unit_price cannot have more than two decimal places.")
+    except InvalidOperation as exc:
+        raise ValueError("unit_price must fit within 10 digits.") from exc
+    return price
+
+
 @login_required
 def product_list(request):
     qs = Product.objects.select_related("category", "supplier", "warehouse").filter(is_active=True)
@@ -142,6 +160,7 @@ def product_import(request):
         created, updated, errors = 0, 0, []
         for i, row in enumerate(reader, start=2):
             try:
+                unit_price = _parse_unit_price(row.get("unit_price"))
                 current_stock = _parse_non_negative_integer(row.get("current_stock"), "current_stock", 0)
                 minimum_stock = _parse_non_negative_integer(row.get("minimum_stock"), "minimum_stock", 10)
                 maximum_stock = _parse_non_negative_integer(row.get("maximum_stock"), "maximum_stock", 500)
@@ -169,7 +188,7 @@ def product_import(request):
                         maximum_stock=maximum_stock,
                         safety_stock=safety_stock,
                         supplier_lead_time=supplier_lead_time,
-                        unit_price=float(row.get("unit_price") or 0),
+                        unit_price=unit_price,
                     ),
                 )
                 created += was_created

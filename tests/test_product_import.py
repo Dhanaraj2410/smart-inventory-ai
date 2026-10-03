@@ -77,3 +77,33 @@ class ProductCsvImportTests(TestCase):
             "maximum_stock cannot be less than minimum_stock",
             status_code=200,
         )
+
+    def test_import_preserves_valid_decimal_unit_price(self):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku,name,unit_price\nCSV-005,Widget,12.34\n",
+            content_type="text/csv",
+        )
+
+        self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertEqual(str(Product.objects.get(sku="CSV-005").unit_price), "12.34")
+
+    def test_import_rejects_invalid_unit_prices(self):
+        for sku, price in (
+            ("CSV-PRICE-1", "NaN"),
+            ("CSV-PRICE-2", "Infinity"),
+            ("CSV-PRICE-3", "-1.00"),
+            ("CSV-PRICE-4", "1.234"),
+            ("CSV-PRICE-5", "100000000.00"),
+        ):
+            with self.subTest(price=price):
+                uploaded_file = SimpleUploadedFile(
+                    "products.csv",
+                    f"sku,name,unit_price\n{sku},Widget,{price}\n".encode(),
+                    content_type="text/csv",
+                )
+
+                self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+                self.assertFalse(Product.objects.filter(sku=sku).exists())
