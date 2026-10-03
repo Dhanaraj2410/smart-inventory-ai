@@ -2,9 +2,11 @@ from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 
+from apps.accounts.models import User
 from apps.products.models import Product
 from apps.sales.models import SalesRecord
 from apps.sales.services import validate_and_import_csv
@@ -145,3 +147,19 @@ class SalesCsvImportTests(TestCase):
 
         with self.assertRaisesMessage(RuntimeError, "database unavailable"):
             validate_and_import_csv(uploaded_file)
+
+
+class SalesUploadViewTests(TestCase):
+    def setUp(self):
+        manager = User.objects.create_user(
+            username="sales-upload-manager",
+            password="test-password",
+            role=User.Role.MANAGER,
+        )
+        self.client.force_login(manager)
+
+    def test_missing_file_shows_validation_message(self):
+        response = self.client.post(reverse("sales:upload"), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choose a CSV file to upload.")

@@ -17,8 +17,11 @@ def sales_list(request):
 @login_required
 @role_required(User.Role.ADMIN, User.Role.MANAGER)
 def sales_upload(request):
-    if request.method == "POST" and request.FILES.get("file"):
-        f = request.FILES["file"]
+    if request.method == "POST":
+        f = request.FILES.get("file")
+        if not f:
+            messages.error(request, "Choose a CSV file to upload.")
+            return redirect("sales:upload")
         try:
             log = validate_and_import_csv(f, uploaded_by=request.user, file_name=f.name)
             messages.success(request, f"Imported {log.rows_created} sales rows "
