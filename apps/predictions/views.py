@@ -3,12 +3,16 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from kombu.exceptions import OperationalError
+import logging
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
 from apps.products.models import Product
 from .models import PredictionHistory, ModelPerformance, InventoryAlert
 from .services import run_prediction, bulk_predict
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -50,14 +54,13 @@ def train_models(request):
         try:
             from apps.predictions.tasks import retrain_models_task
             retrain_models_task.delay()
-            from django.contrib import messages
             messages.success(request, "Model training started in the background.")
-        except Exception:
+        except OperationalError as exc:
+            logger.warning("Celery broker unavailable; training models synchronously: %s", exc)
             from ml.training.train_stockout_model import train_stockout_model
             from ml.training.train_demand_model import train_demand_model
             train_stockout_model()
             train_demand_model()
-            from django.contrib import messages
             messages.success(request, "Models trained synchronously (no Celery worker detected).")
         return redirect("predictions:performance")
     return render(request, "predictions/train.html")

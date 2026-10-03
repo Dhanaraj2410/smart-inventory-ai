@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 from django.test import TestCase, Client
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from kombu.exceptions import OperationalError
 from apps.accounts.models import User
 from apps.products.models import Product
 from apps.predictions.models import InventoryAlert
@@ -137,3 +140,34 @@ class BulkPredictionUploadTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "unexpected number of columns")
+
+
+class ModelTrainingViewTests(TestCase):
+    def setUp(self):
+        admin = User.objects.create_user(
+            username="model-training-admin",
+            password="test-password",
+            role=User.Role.ADMIN,
+        )
+        self.client = Client()
+        self.client.force_login(admin)
+
+    @patch("apps.predictions.tasks.retrain_models_task.delay", side_effect=OperationalError("broker down"))
+    @patch("ml.training.train_stockout_model.train_stockout_model")
+    @patch("ml.training.train_demand_model.train_demand_model")
+    def test_broker_unavailable_runs_synchronous_training(self, train_demand, train_stockout, delay):
+        response = self.client.post(reverse("predictions:train"))
+
+        self.assertEqual(response.status_code, 302)
+        train_stockout.assert_called_once_with()
+        train_demand.assert_called_once_with()
+
+    @patch("apps.predictions.tasks.retrain_models_task.delay", side_effect=RuntimeError("unexpected failure"))
+    @patch("ml.training.train_stockout_model.train_stockout_model")
+    @patch("ml.training.train_demand_model.train_demand_model")
+    def test_unexpected_queue_errors_do_not_start_sync_training(self, train_demand, train_stockout, delay):
+        with self.assertRaisesMessage(RuntimeError, "unexpected failure"):
+            self.client.post(reverse("predictions:train"))
+
+        train_stockout.assert_not_called()
+        train_demand.assert_not_called()
