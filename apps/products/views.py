@@ -47,6 +47,13 @@ def _parse_unit_price(value):
     return price
 
 
+def _spreadsheet_safe(value):
+    text = str(value)
+    if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return f"'{text}"
+    return text
+
+
 @login_required
 def product_list(request):
     qs = Product.objects.select_related("category", "supplier", "warehouse").filter(is_active=True)
@@ -228,8 +235,10 @@ def product_export(request):
                       "minimum_stock", "maximum_stock", "safety_stock", "supplier_lead_time",
                       "unit_price", "stock_status"])
     for p in Product.objects.select_related("category", "supplier", "warehouse").filter(is_active=True):
-        writer.writerow([p.sku, p.name, p.category.name if p.category else "",
-                          p.supplier.name if p.supplier else "", p.warehouse.name if p.warehouse else "",
+        writer.writerow([_spreadsheet_safe(p.sku), _spreadsheet_safe(p.name),
+                          _spreadsheet_safe(p.category.name if p.category else ""),
+                          _spreadsheet_safe(p.supplier.name if p.supplier else ""),
+                          _spreadsheet_safe(p.warehouse.name if p.warehouse else ""),
                           p.current_stock, p.minimum_stock, p.maximum_stock, p.safety_stock,
                           p.supplier_lead_time, p.unit_price, p.stock_status])
     return response

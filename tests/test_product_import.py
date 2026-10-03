@@ -1,3 +1,5 @@
+import csv
+import io
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -35,6 +37,18 @@ class ProductCsvImportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Choose a CSV file to import.")
+
+    def test_export_escapes_spreadsheet_formula_text(self):
+        Product.objects.create(
+            sku="=HYPERLINK(\"https://example.com\")",
+            name=" +SUM(1,1)",
+        )
+
+        response = self.client.get(reverse("products:export"))
+        exported_rows = list(csv.reader(io.StringIO(response.content.decode("utf-8"))))
+
+        self.assertEqual(exported_rows[1][0], "'=HYPERLINK(\"https://example.com\")")
+        self.assertEqual(exported_rows[1][1], "' +SUM(1,1)")
 
     def test_import_rejects_duplicate_headers(self):
         uploaded_file = SimpleUploadedFile(
