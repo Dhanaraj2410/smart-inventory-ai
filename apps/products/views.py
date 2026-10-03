@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -178,27 +179,30 @@ def product_import(request):
                 )
                 if maximum_stock < minimum_stock:
                     raise ValueError("maximum_stock cannot be less than minimum_stock.")
-                category, _ = Category.objects.get_or_create(name=row.get("category", "General").strip() or "General")
-                supplier = None
-                if row.get("supplier"):
-                    supplier, _ = Supplier.objects.get_or_create(name=row["supplier"].strip())
-                warehouse = None
-                if row.get("warehouse"):
-                    warehouse, _ = Warehouse.objects.get_or_create(name=row["warehouse"].strip())
+                with transaction.atomic():
+                    category, _ = Category.objects.get_or_create(
+                        name=row.get("category", "General").strip() or "General"
+                    )
+                    supplier = None
+                    if row.get("supplier"):
+                        supplier, _ = Supplier.objects.get_or_create(name=row["supplier"].strip())
+                    warehouse = None
+                    if row.get("warehouse"):
+                        warehouse, _ = Warehouse.objects.get_or_create(name=row["warehouse"].strip())
 
-                obj, was_created = Product.objects.update_or_create(
-                    sku=sku,
-                    defaults=dict(
-                        name=name,
-                        category=category, supplier=supplier, warehouse=warehouse,
-                        current_stock=current_stock,
-                        minimum_stock=minimum_stock,
-                        maximum_stock=maximum_stock,
-                        safety_stock=safety_stock,
-                        supplier_lead_time=supplier_lead_time,
-                        unit_price=unit_price,
-                    ),
-                )
+                    obj, was_created = Product.objects.update_or_create(
+                        sku=sku,
+                        defaults=dict(
+                            name=name,
+                            category=category, supplier=supplier, warehouse=warehouse,
+                            current_stock=current_stock,
+                            minimum_stock=minimum_stock,
+                            maximum_stock=maximum_stock,
+                            safety_stock=safety_stock,
+                            supplier_lead_time=supplier_lead_time,
+                            unit_price=unit_price,
+                        ),
+                    )
                 created += was_created
                 updated += not was_created
             except Exception as e:

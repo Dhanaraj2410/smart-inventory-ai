@@ -1,9 +1,12 @@
+from unittest.mock import patch
+
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import User
-from apps.products.models import Product
+from apps.products.models import Category, Product, Supplier, Warehouse
 
 
 class ProductCsvImportTests(TestCase):
@@ -136,3 +139,21 @@ class ProductCsvImportTests(TestCase):
             "unexpected number of columns",
             status_code=200,
         )
+
+    @patch(
+        "apps.products.views.Product.objects.update_or_create",
+        side_effect=IntegrityError("product write failed"),
+    )
+    def test_failed_product_write_rolls_back_related_records(self, update_or_create):
+        uploaded_file = SimpleUploadedFile(
+            "products.csv",
+            b"sku,name,category,supplier,warehouse\n"
+            b"CSV-008,Widget,New Category,New Supplier,New Warehouse\n",
+            content_type="text/csv",
+        )
+
+        self.client.post(reverse("products:import"), {"file": uploaded_file})
+
+        self.assertEqual(Category.objects.count(), 0)
+        self.assertEqual(Supplier.objects.count(), 0)
+        self.assertEqual(Warehouse.objects.count(), 0)
