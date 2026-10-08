@@ -1,5 +1,10 @@
 """Celery background tasks: scheduled inventory-alert checks & bulk model runs."""
+import logging
+import smtplib
+
 from celery import shared_task
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -46,10 +51,18 @@ def _raise_alert(product, alert_type, message):
     from django.conf import settings
     from .models import InventoryAlert
 
-    exists = InventoryAlert.objects.filter(product=product, alert_type=alert_type, is_resolved=False).exists()
-    if exists:
+    alert, created = InventoryAlert.objects.get_or_create(
+        product=product,
+        alert_type=alert_type,
+        is_resolved=False,
+        defaults={"message": message},
+    )
+    if not created:
+        if alert.message != message:
+            alert.message = message
+            alert.save(update_fields=["message"])
         return
-    InventoryAlert.objects.create(product=product, alert_type=alert_type, message=message)
+
     if settings.EMAIL_HOST:
         try:
             send_mail(
@@ -57,10 +70,13 @@ def _raise_alert(product, alert_type, message):
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[settings.DEFAULT_FROM_EMAIL],
-                fail_silently=True,
             )
-        except Exception:
-            pass
+        except (smtplib.SMTPException, OSError):
+            logger.exception(
+                "Failed to send %s inventory alert email for product %s.",
+                alert_type,
+                product.pk,
+            )
 
 
 @shared_task
