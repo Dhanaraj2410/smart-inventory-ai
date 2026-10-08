@@ -31,13 +31,11 @@ def average_daily_sales(product, window_days=30):
 def _forecast_demand_over_lead_time(product, lead_time_days):
     """Prefer the trained forecasting model's output; otherwise fall back to
     a simple average-based projection so the engine always returns a number."""
-    try:
-        from apps.forecasting.services import get_latest_forecast
-        forecast = get_latest_forecast(product, horizon=max(7, lead_time_days))
-        if forecast and forecast.get("values"):
-            return round(sum(forecast["values"][:lead_time_days]), 2)
-    except Exception:
-        pass
+    from apps.forecasting.services import get_latest_forecast
+    forecast = get_latest_forecast(product, horizon=max(7, lead_time_days))
+    if forecast and forecast.get("values"):
+        return round(sum(forecast["values"][:lead_time_days]), 2)
+
     avg_daily = average_daily_sales(product)
     return round(avg_daily * lead_time_days, 2)
 

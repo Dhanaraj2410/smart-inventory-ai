@@ -1,11 +1,16 @@
 """Model-level tests: product creation, inventory calculation, reorder calculation."""
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from django.test import TestCase
 
 from apps.products.models import Product, Category
 from apps.sales.models import SalesRecord
-from apps.recommendations.services import calculate_reorder, average_daily_sales
+from apps.recommendations.services import (
+    _forecast_demand_over_lead_time,
+    average_daily_sales,
+    calculate_reorder,
+)
 
 
 class ProductModelTests(TestCase):
@@ -73,3 +78,13 @@ class ReorderCalculationTests(TestCase):
         from apps.recommendations.models import ReorderRecommendation
         calculate_reorder(self.product, demand_increase_pct=50, is_simulation=True)
         self.assertEqual(ReorderRecommendation.objects.count(), 0)
+
+    @patch(
+        "apps.forecasting.services.get_latest_forecast",
+        side_effect=RuntimeError("forecast database unavailable"),
+    )
+    def test_forecast_service_errors_are_not_hidden(self, get_latest_forecast):
+        with self.assertRaisesMessage(RuntimeError, "forecast database unavailable"):
+            _forecast_demand_over_lead_time(self.product, self.product.supplier_lead_time)
+
+        get_latest_forecast.assert_called_once()
