@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Category, Supplier, Warehouse
+from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse
 
 
 @admin.register(Product)
@@ -13,3 +13,32 @@ class ProductAdmin(admin.ModelAdmin):
 admin.site.register(Category)
 admin.site.register(Supplier)
 admin.site.register(Warehouse)
+
+
+@admin.register(InventoryAdjustment)
+class InventoryAdjustmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "product",
+        "quantity_change",
+        "stock_before",
+        "stock_after",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("created_at",)
+    search_fields = ("product__sku", "product__name", "note", "created_by__username")
+    readonly_fields = (
+        "product",
+        "quantity_change",
+        "stock_before",
+        "stock_after",
+        "note",
+        "created_by",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
