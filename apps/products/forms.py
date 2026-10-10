@@ -3,6 +3,23 @@ from django import forms
 from .models import Product
 
 
+class InventoryAdjustmentForm(forms.Form):
+    quantity_change = forms.IntegerField(
+        label="Quantity change",
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    note = forms.CharField(
+        max_length=500,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+    )
+
+    def clean_quantity_change(self):
+        quantity_change = self.cleaned_data["quantity_change"]
+        if quantity_change == 0:
+            raise forms.ValidationError("Quantity change cannot be zero.")
+        return quantity_change
+
+
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product

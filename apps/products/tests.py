@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from apps.products.forms import InventoryAdjustmentForm
 
 from apps.products.models import InventoryAdjustment, Product
 from apps.products.services import adjust_inventory
@@ -72,3 +73,22 @@ class InventoryAdjustmentServiceTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.current_stock, 10)
         self.assertEqual(InventoryAdjustment.objects.count(), 0)
+
+
+class InventoryAdjustmentFormTests(TestCase):
+    def test_form_accepts_positive_and_negative_adjustments(self):
+        for quantity_change in (5, -3):
+            with self.subTest(quantity_change=quantity_change):
+                form = InventoryAdjustmentForm(
+                    {"quantity_change": quantity_change, "note": "Count correction"}
+                )
+                self.assertTrue(form.is_valid(), form.errors)
+
+    def test_form_rejects_zero_and_missing_note(self):
+        form = InventoryAdjustmentForm({"quantity_change": 0, "note": "Count correction"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("quantity_change", form.errors)
+
+        form = InventoryAdjustmentForm({"quantity_change": 1, "note": ""})
+        self.assertFalse(form.is_valid())
+        self.assertIn("note", form.errors)
