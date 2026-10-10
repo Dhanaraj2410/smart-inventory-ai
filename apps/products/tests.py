@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import Client
 from apps.products.forms import InventoryAdjustmentForm
+from rest_framework.test import APIClient
 
 from apps.products.models import InventoryAdjustment, Product
 from apps.products.services import adjust_inventory
@@ -177,3 +178,68 @@ class InventoryAdjustmentViewTests(TestCase):
         response = self.client.get(reverse("products:detail", args=[self.product.pk]))
 
         self.assertContains(response, reverse("products:adjust_stock", args=[self.product.pk]))
+
+
+class InventoryAdjustmentAPITests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.manager = user_model.objects.create_user(
+            username="api-stock-manager",
+            password="test-password",
+            role=user_model.Role.MANAGER,
+        )
+        self.viewer = user_model.objects.create_user(
+            username="api-stock-viewer",
+            password="test-password",
+            role=user_model.Role.VIEWER,
+        )
+        self.product = Product.objects.create(
+            sku="API-STOCK-1", name="API inventory item", current_stock=12
+        )
+        self.client = APIClient()
+        self.url = reverse("product-stock-adjustments", args=[self.product.pk])
+
+    def test_manager_can_adjust_stock_through_api(self):
+        self.client.force_authenticate(user=self.manager)
+
+        response = self.client.post(
+            self.url,
+            {"quantity_change": -2, "note": "Damaged units"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["stock_before"], 12)
+        self.assertEqual(response.data["stock_after"], 10)
+        self.assertEqual(response.data["created_by_username"], self.manager.username)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 10)
+
+    def test_api_rejects_zero_and_below_zero_adjustments(self):
+        self.client.force_authenticate(user=self.manager)
+
+        for quantity_change in (0, -13):
+            with self.subTest(quantity_change=quantity_change):
+                response = self.client.post(
+                    self.url,
+                    {"quantity_change": quantity_change, "note": "Inventory correction"},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, 400)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 12)
+        self.assertEqual(InventoryAdjustment.objects.count(), 0)
+
+    def test_viewer_cannot_write_adjustments_through_api(self):
+        self.client.force_authenticate(user=self.viewer)
+
+        response = self.client.post(
+            self.url,
+            {"quantity_change": 1, "note": "Unauthorized"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 12)
