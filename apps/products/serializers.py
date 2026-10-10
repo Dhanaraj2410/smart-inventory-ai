@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, Supplier, Warehouse
+from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -18,6 +18,42 @@ class WarehouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Warehouse
         fields = "__all__"
+
+
+class InventoryAdjustmentSerializer(serializers.ModelSerializer):
+    created_by_username = serializers.CharField(
+        source="created_by.username", read_only=True, default=None
+    )
+
+    class Meta:
+        model = InventoryAdjustment
+        fields = [
+            "id",
+            "product",
+            "quantity_change",
+            "stock_before",
+            "stock_after",
+            "note",
+            "created_by",
+            "created_by_username",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class InventoryAdjustmentInputSerializer(serializers.Serializer):
+    quantity_change = serializers.IntegerField()
+    note = serializers.CharField(max_length=500, allow_blank=False, trim_whitespace=True)
+
+    def validate_quantity_change(self, value):
+        if value == 0:
+            raise serializers.ValidationError("Quantity change cannot be zero.")
+        return value
+
+    def validate_note(self, value):
+        if not value:
+            raise serializers.ValidationError("A note is required for every inventory adjustment.")
+        return value
 
 
 class ProductSerializer(serializers.ModelSerializer):
