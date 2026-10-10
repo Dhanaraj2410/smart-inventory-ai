@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.conf import settings
 
 
 class Category(models.Model):
@@ -109,6 +110,40 @@ class Product(models.Model):
     @property
     def inventory_value(self):
         return round(float(self.current_stock) * float(self.unit_price), 2)
+
+
+class InventoryAdjustment(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="inventory_adjustments"
+    )
+    quantity_change = models.IntegerField()
+    stock_before = models.PositiveIntegerField()
+    stock_after = models.PositiveIntegerField()
+    note = models.CharField(max_length=500)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_adjustments",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(quantity_change=0),
+                name="inventory_adjustment_nonzero_change",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(stock_after=models.F("stock_before") + models.F("quantity_change")),
+                name="inventory_adjustment_stock_matches_change",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.product.sku}: {self.quantity_change:+} units"
 
 
 STOCK_STATUS_LABELS = {
