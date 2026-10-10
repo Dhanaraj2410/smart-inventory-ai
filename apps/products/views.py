@@ -92,6 +92,26 @@ def product_list(request):
 
 
 @login_required
+def inventory_adjustment_list(request):
+    query = request.GET.get("q", "").strip()
+    adjustments = InventoryAdjustment.objects.select_related(
+        "product", "created_by"
+    ).all()
+    if query:
+        adjustments = adjustments.filter(
+            Q(product__sku__icontains=query)
+            | Q(product__name__icontains=query)
+            | Q(note__icontains=query)
+        )
+    page_obj = Paginator(adjustments, 25).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "products/adjustment_list.html",
+        {"page_obj": page_obj, "q": query},
+    )
+
+
+@login_required
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk, is_active=True)
     from apps.predictions.services import get_latest_risk

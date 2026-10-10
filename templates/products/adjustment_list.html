@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block page_title %}Inventory adjustment history{% endblock %}
+{% block content %}
+<div class="glass-card">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h4 class="mb-1">Inventory adjustment history</h4>
+      <p class="text-muted mb-0">Review recorded stock changes and their reasons.</p>
+    </div>
+  </div>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-8">
+      <label for="adjustment-search" class="visually-hidden">Search adjustments</label>
+      <input id="adjustment-search" type="search" name="q" value="{{ q }}" class="form-control"
+             placeholder="Search SKU, product, or reason">
+    </div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Search</button></div>
+    {% if q %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear</a></div>{% endif %}
+  </form>
+  {% if page_obj.object_list %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr><th>Date</th><th>Product</th><th>Change</th><th>Stock</th><th>Reason</th><th>Updated by</th></tr>
+      </thead>
+      <tbody>
+        {% for adjustment in page_obj %}
+        <tr>
+          <td>{{ adjustment.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if adjustment.product.is_active %}
+            <a href="{% url 'products:detail' adjustment.product_id %}">{{ adjustment.product.sku }}</a>
+            {% else %}
+            {{ adjustment.product.sku }}
+            {% endif %}
+            <div class="small text-muted">{{ adjustment.product.name }}</div>
+          </td>
+          <td>{% if adjustment.quantity_change > 0 %}+{% endif %}{{ adjustment.quantity_change }}</td>
+          <td>{{ adjustment.stock_before }} &rarr; {{ adjustment.stock_after }}</td>
+          <td>{{ adjustment.note }}</td>
+          <td>{{ adjustment.created_by|default:"Deleted user" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav aria-label="Adjustment history pages" class="d-flex justify-content-between align-items-center">
+    <span class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="btn-group">
+      {% if page_obj.has_previous %}
+      <a class="btn btn-outline-secondary" href="?q={{ q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a class="btn btn-outline-secondary" href="?q={{ q|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>
+      {% endif %}
+    </div>
+  </nav>
+  {% else %}
+  <p class="text-muted mb-0">No inventory adjustments match your search.</p>
+  {% endif %}
+</div>
+{% endblock %}

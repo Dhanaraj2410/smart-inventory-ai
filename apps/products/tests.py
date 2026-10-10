@@ -179,6 +179,22 @@ class InventoryAdjustmentViewTests(TestCase):
 
         self.assertContains(response, reverse("products:adjust_stock", args=[self.product.pk]))
 
+    def test_adjustment_history_search_and_pagination(self):
+        for index in range(26):
+            adjust_inventory(self.product.pk, 1, f"Batch {index}", self.manager)
+        adjust_inventory(self.product.pk, 1, "Unique audit search", self.manager)
+        self.client.force_login(self.viewer)
+
+        first_page = self.client.get(reverse("products:adjustment_list"))
+        search_result = self.client.get(
+            reverse("products:adjustment_list"), {"q": "Unique audit search"}
+        )
+
+        self.assertContains(first_page, "Next")
+        self.assertContains(first_page, "Page 1 of 2")
+        self.assertContains(search_result, "Unique audit search")
+        self.assertNotContains(search_result, "Batch 1</td>")
+
 
 class InventoryAdjustmentAPITests(TestCase):
     def setUp(self):
