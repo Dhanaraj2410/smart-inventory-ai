@@ -211,6 +211,19 @@ class InventoryAdjustmentViewTests(TestCase):
         self.assertEqual(rows[1][6], "'=2+2")
         self.assertEqual(rows[1][1], self.product.sku)
 
+    def test_adjustment_csv_export_respects_history_search(self):
+        adjust_inventory(self.product.pk, 1, "Targeted reason", self.manager)
+        adjust_inventory(self.product.pk, 1, "Unrelated reason", self.manager)
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(
+            reverse("products:adjustment_export"), {"q": "Targeted reason"}
+        )
+        rows = list(csv.reader(io.StringIO(response.content.decode("utf-8"))))
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1][6], "Targeted reason")
+
 
 class InventoryAdjustmentAPITests(TestCase):
     def setUp(self):
