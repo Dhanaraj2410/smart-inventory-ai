@@ -33,6 +33,8 @@ hard-coded.
 - **Inventory health classification**: Healthy / Low Stock / Critical /
   Overstocked / Out of Stock.
 - **Product CRUD** with search, filter, CSV import/export.
+- **Auditable inventory adjustments** with required reasons, before/after stock
+  values, a searchable history, and CSV export.
 - **Sales history CSV upload** with validation (bad dates, negative
   quantities, missing columns all rejected with clear errors).
 - **AI Inventory Assistant** (Hugging Face-backed): answers natural-language
@@ -72,7 +74,7 @@ smart-inventory-ai/
 ├── config/          # settings, urls, wsgi/asgi, celery app
 ├── apps/
 │   ├── accounts/        # custom User model, roles, auth views
-│   ├── products/        # Product/Category/Supplier/Warehouse CRUD + API
+│   ├── products/        # Product CRUD, inventory adjustment ledger + API
 │   ├── sales/            # SalesRecord + CSV import/validation
 │   ├── predictions/      # PredictionHistory, ModelPerformance, InventoryAlert,
 │   │                      #   rule-based + ML-backed risk service, Celery tasks

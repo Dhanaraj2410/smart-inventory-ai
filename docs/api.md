@@ -10,6 +10,7 @@ Pagination uses page numbers with a default page size of 25.
 | Route | Purpose |
 |---|---|
 | `/api/products/` | Product records |
+| `/api/products/<product-id>/stock-adjustments/` | Read or create stock adjustment history |
 | `/api/categories/` | Product categories |
 | `/api/suppliers/` | Suppliers |
 | `/api/warehouses/` | Warehouses |
@@ -34,6 +35,35 @@ Product, sales, prediction, forecast, recommendation, and alert collections
 are exposed through Django REST Framework viewsets. Consult the browsable API
 or the corresponding `apps/*/api_views.py` for accepted methods, filters, and
 request fields.
+
+## Inventory adjustments
+
+Authenticated users can read the paginated adjustment history for an active
+product. Inventory managers and admins can also submit stock corrections:
+
+```http
+POST /api/products/42/stock-adjustments/
+Content-Type: application/json
+
+{
+  "quantity_change": -3,
+  "note": "Damaged units removed during cycle count"
+}
+```
+
+`quantity_change` is a nonzero signed whole number: positive values add stock
+and negative values remove it. The required note is limited to 500 characters.
+An adjustment that would reduce stock below zero is rejected with HTTP 400.
+Successful writes return HTTP 201 with the adjustment ID, product, quantity
+change, stock before and after, note, creator, and timestamp. The update and
+audit record are written atomically.
+
+Read history with `GET /api/products/42/stock-adjustments/?page=2`. Results
+use the standard page-number pagination envelope (25 records per page).
+Viewers may read the history but cannot create adjustments.
+In the web UI, inventory managers can adjust stock from a product detail page;
+any authenticated user can search the full history at `/products/adjustments/`
+and export the current search as CSV.
 
 ## Example
 
