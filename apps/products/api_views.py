@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.accounts.permissions import ReadOnlyOrManager
-from .models import Product, Category, Supplier, Warehouse
+from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse
 from .serializers import (
     CategorySerializer,
     InventoryAdjustmentInputSerializer,
@@ -30,9 +30,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save(update_fields=["is_active"])
 
-    @action(detail=True, methods=["post"], url_path="stock-adjustments")
+    @action(detail=True, methods=["get", "post"], url_path="stock-adjustments")
     def stock_adjustments(self, request, pk=None):
         product = self.get_object()
+        if request.method == "GET":
+            adjustments = InventoryAdjustment.objects.filter(product=product).select_related(
+                "created_by"
+            )
+            return Response(InventoryAdjustmentSerializer(adjustments, many=True).data)
+
         input_serializer = InventoryAdjustmentInputSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         try:

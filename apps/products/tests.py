@@ -243,3 +243,15 @@ class InventoryAdjustmentAPITests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.product.refresh_from_db()
         self.assertEqual(self.product.current_stock, 12)
+
+    def test_viewer_can_read_adjustment_history(self):
+        adjust_inventory(self.product.pk, 4, "Received shipment", self.manager)
+        self.client.force_authenticate(user=self.viewer)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["stock_before"], 12)
+        self.assertEqual(response.data[0]["stock_after"], 16)
+        self.assertEqual(response.data[0]["note"], "Received shipment")
