@@ -37,6 +37,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             adjustments = InventoryAdjustment.objects.filter(product=product).select_related(
                 "created_by"
             )
+            page = self.paginate_queryset(adjustments)
+            if page is not None:
+                serializer = InventoryAdjustmentSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
             return Response(InventoryAdjustmentSerializer(adjustments, many=True).data)
 
         input_serializer = InventoryAdjustmentInputSerializer(data=request.data)

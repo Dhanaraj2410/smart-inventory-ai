@@ -251,7 +251,22 @@ class InventoryAdjustmentAPITests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["stock_before"], 12)
-        self.assertEqual(response.data[0]["stock_after"], 16)
-        self.assertEqual(response.data[0]["note"], "Received shipment")
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["stock_before"], 12)
+        self.assertEqual(response.data["results"][0]["stock_after"], 16)
+        self.assertEqual(response.data["results"][0]["note"], "Received shipment")
+
+    def test_adjustment_history_is_paginated(self):
+        for index in range(30):
+            adjust_inventory(self.product.pk, 1, f"Count {index}", self.manager)
+        self.client.force_authenticate(user=self.viewer)
+
+        first_page = self.client.get(self.url)
+        second_page = self.client.get(self.url, {"page": 2})
+
+        self.assertEqual(first_page.data["count"], 30)
+        self.assertEqual(len(first_page.data["results"]), 25)
+        self.assertIsNotNone(first_page.data["next"])
+        self.assertEqual(len(second_page.data["results"]), 5)
+        self.assertIsNone(second_page.data["next"])
