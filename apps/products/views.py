@@ -91,9 +91,7 @@ def product_list(request):
     return render(request, "products/list.html", context)
 
 
-@login_required
-def inventory_adjustment_list(request):
-    query = request.GET.get("q", "").strip()
+def _inventory_adjustments_queryset(query):
     adjustments = InventoryAdjustment.objects.select_related(
         "product", "created_by"
     ).all()
@@ -103,12 +101,53 @@ def inventory_adjustment_list(request):
             | Q(product__name__icontains=query)
             | Q(note__icontains=query)
         )
+    return adjustments
+
+
+@login_required
+def inventory_adjustment_list(request):
+    query = request.GET.get("q", "").strip()
+    adjustments = _inventory_adjustments_queryset(query)
     page_obj = Paginator(adjustments, 25).get_page(request.GET.get("page"))
     return render(
         request,
         "products/adjustment_list.html",
         {"page_obj": page_obj, "q": query},
     )
+
+
+@login_required
+def inventory_adjustment_export(request):
+    query = request.GET.get("q", "").strip()
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="inventory_adjustments.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "created_at",
+            "product_sku",
+            "product_name",
+            "quantity_change",
+            "stock_before",
+            "stock_after",
+            "note",
+            "created_by",
+        ]
+    )
+    for adjustment in _inventory_adjustments_queryset(query):
+        writer.writerow(
+            [
+                adjustment.created_at.isoformat(),
+                _spreadsheet_safe(adjustment.product.sku),
+                _spreadsheet_safe(adjustment.product.name),
+                adjustment.quantity_change,
+                adjustment.stock_before,
+                adjustment.stock_after,
+                _spreadsheet_safe(adjustment.note),
+                _spreadsheet_safe(adjustment.created_by.username if adjustment.created_by else ""),
+            ]
+        )
+    return response
 
 
 @login_required

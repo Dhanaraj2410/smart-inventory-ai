@@ -7,6 +7,7 @@
       <h4 class="mb-1">Inventory adjustment history</h4>
       <p class="text-muted mb-0">Review recorded stock changes and their reasons.</p>
     </div>
+    <a href="{% url 'products:adjustment_export' %}?q={{ q|urlencode }}" class="btn btn-outline-primary">Export CSV</a>
   </div>
   <form method="get" class="row g-2 mb-3">
     <div class="col-md-8">

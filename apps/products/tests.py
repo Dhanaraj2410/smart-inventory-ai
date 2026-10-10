@@ -1,3 +1,6 @@
+import csv
+import io
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -194,6 +197,19 @@ class InventoryAdjustmentViewTests(TestCase):
         self.assertContains(first_page, "Page 1 of 2")
         self.assertContains(search_result, "Unique audit search")
         self.assertNotContains(search_result, "Batch 1</td>")
+
+    def test_adjustment_csv_export_safely_escapes_user_text(self):
+        adjust_inventory(self.product.pk, 1, "=2+2", self.manager)
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("products:adjustment_export"))
+        rows = list(csv.reader(io.StringIO(response.content.decode("utf-8"))))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertEqual(response["Content-Disposition"], 'attachment; filename="inventory_adjustments.csv"')
+        self.assertEqual(rows[1][6], "'=2+2")
+        self.assertEqual(rows[1][1], self.product.sku)
 
 
 class InventoryAdjustmentAPITests(TestCase):
