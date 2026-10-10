@@ -1,5 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.urls import reverse
+from django.test import Client
 from apps.products.forms import InventoryAdjustmentForm
 
 from apps.products.models import InventoryAdjustment, Product
@@ -92,3 +94,68 @@ class InventoryAdjustmentFormTests(TestCase):
         form = InventoryAdjustmentForm({"quantity_change": 1, "note": ""})
         self.assertFalse(form.is_valid())
         self.assertIn("note", form.errors)
+
+
+class InventoryAdjustmentViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.manager = user_model.objects.create_user(
+            username="stock-manager",
+            password="test-password",
+            role=user_model.Role.MANAGER,
+        )
+        self.viewer = user_model.objects.create_user(
+            username="stock-viewer",
+            password="test-password",
+            role=user_model.Role.VIEWER,
+        )
+        self.product = Product.objects.create(
+            sku="WEB-1", name="Web inventory item", current_stock=8
+        )
+        self.url = reverse("products:adjust_stock", args=[self.product.pk])
+
+    def test_manager_can_make_an_adjustment(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            self.url,
+            {"quantity_change": "3", "note": "Received shipment"},
+        )
+
+        self.assertRedirects(response, reverse("products:detail", args=[self.product.pk]))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 11)
+        adjustment = InventoryAdjustment.objects.get(product=self.product)
+        self.assertEqual(adjustment.created_by, self.manager)
+
+    def test_manager_sees_validation_error_for_adjustment_below_zero(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            self.url,
+            {"quantity_change": "-9", "note": "Damaged units"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "An adjustment cannot reduce stock below zero.")
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 8)
+        self.assertEqual(InventoryAdjustment.objects.count(), 0)
+
+    def test_viewer_cannot_adjust_inventory(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.post(
+            self.url,
+            {"quantity_change": "1", "note": "Unauthorized"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.current_stock, 8)
+
+    def test_anonymous_user_is_redirected_to_login(self):
+        response = Client().get(self.url)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)

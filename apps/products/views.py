@@ -7,13 +7,15 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_http_methods
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
-from .forms import ProductForm
+from .forms import InventoryAdjustmentForm, ProductForm
 from .models import Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
+from .services import adjust_inventory
 
 
 def _parse_non_negative_integer(value, field_name, default):
@@ -129,6 +131,34 @@ def product_edit(request, pk):
             messages.success(request, f"Product {product.sku} updated.")
             return redirect("products:detail", pk=product.pk)
     return render(request, "products/form.html", {"form": form, "product": product})
+
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.MANAGER)
+@require_http_methods(["GET", "POST"])
+def product_adjust_stock(request, pk):
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+    form = InventoryAdjustmentForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            adjust_inventory(
+                product.pk,
+                form.cleaned_data["quantity_change"],
+                form.cleaned_data["note"],
+                request.user,
+            )
+        except ValueError as exc:
+            form.add_error(None, str(exc))
+        except Product.DoesNotExist as exc:
+            raise Http404 from exc
+        else:
+            messages.success(request, f"Stock updated for {product.sku}.")
+            return redirect("products:detail", pk=product.pk)
+    return render(
+        request,
+        "products/stock_adjustment.html",
+        {"form": form, "product": product},
+    )
 
 
 @login_required
