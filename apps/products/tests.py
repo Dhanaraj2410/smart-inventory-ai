@@ -3,6 +3,7 @@ import io
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.urls import reverse
 from django.test import Client
 from apps.products.forms import InventoryAdjustmentForm
@@ -32,6 +33,35 @@ class ProductModelTests(TestCase):
         p = Product.objects.create(sku="A4", name="D", current_stock=10, unit_price=2.5,
                                     minimum_stock=1, maximum_stock=100, safety_stock=1, supplier_lead_time=1)
         self.assertEqual(p.inventory_value, 25.0)
+
+
+class InventoryAdjustmentConstraintTests(TestCase):
+    def setUp(self):
+        self.product = Product.objects.create(
+            sku="CONSTRAINT-1", name="Constraint inventory item", current_stock=5
+        )
+
+    def test_database_rejects_zero_quantity_change(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                InventoryAdjustment.objects.create(
+                    product=self.product,
+                    quantity_change=0,
+                    stock_before=5,
+                    stock_after=5,
+                    note="Invalid zero change",
+                )
+
+    def test_database_rejects_inconsistent_stock_values(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                InventoryAdjustment.objects.create(
+                    product=self.product,
+                    quantity_change=1,
+                    stock_before=5,
+                    stock_after=7,
+                    note="Invalid stock arithmetic",
+                )
 
 
 class InventoryAdjustmentServiceTests(TestCase):
