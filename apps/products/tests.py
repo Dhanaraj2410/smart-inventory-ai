@@ -159,3 +159,21 @@ class InventoryAdjustmentViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
+
+    def test_product_detail_shows_adjustment_history(self):
+        adjust_inventory(self.product.pk, 2, "Cycle count correction", self.manager)
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("products:detail", args=[self.product.pk]))
+
+        self.assertContains(response, "Recent stock adjustments")
+        self.assertContains(response, "Cycle count correction")
+        self.assertContains(response, "+2")
+        self.assertNotContains(response, reverse("products:adjust_stock", args=[self.product.pk]))
+
+    def test_product_detail_offers_adjustment_to_managers(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("products:detail", args=[self.product.pk]))
+
+        self.assertContains(response, reverse("products:adjust_stock", args=[self.product.pk]))

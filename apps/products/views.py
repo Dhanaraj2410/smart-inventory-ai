@@ -14,7 +14,7 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
 from .forms import InventoryAdjustmentForm, ProductForm
-from .models import Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
+from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
 from .services import adjust_inventory
 
 
@@ -104,6 +104,8 @@ def product_detail(request, pk):
         "forecast": get_latest_forecast(product, horizon=7),
         "forecast_30": get_latest_forecast(product, horizon=30),
         "recommendation": build_recommendation(product),
+        "inventory_adjustments": InventoryAdjustment.objects.filter(product=product)
+        .select_related("created_by")[:10],
     }
     return render(request, "products/detail.html", context)
 

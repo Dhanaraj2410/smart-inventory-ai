@@ -14,6 +14,9 @@
       <p><strong>Unit price:</strong> ${{ product.unit_price }}</p>
       <p><strong>Inventory value:</strong> ${{ product.inventory_value }}</p>
       <a href="{% url 'products:edit' product.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+      {% if user.is_manager_role %}
+      <a href="{% url 'products:adjust_stock' product.pk %}" class="btn btn-outline-warning btn-sm">Adjust stock</a>
+      {% endif %}
       <a href="{% url 'recommendations:simulate' product.pk %}" class="btn btn-outline-primary btn-sm">What-If Simulator</a>
     </div>
   </div>
@@ -36,6 +39,31 @@
       <p>{{ recommendation.explanation }}</p>
       <p><strong>Recommended quantity:</strong> {{ recommendation.recommended_quantity }} units
          {% if recommendation.reorder_required %}<span class="badge bg-danger">Reorder now</span>{% endif %}</p>
+    </div>
+    <div class="glass-card mt-3">
+      <h6>Recent stock adjustments</h6>
+      {% if inventory_adjustments %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr><th>Date</th><th>Change</th><th>Stock</th><th>Reason</th><th>Updated by</th></tr>
+          </thead>
+          <tbody>
+            {% for adjustment in inventory_adjustments %}
+            <tr>
+              <td>{{ adjustment.created_at|date:"Y-m-d H:i" }}</td>
+              <td>{% if adjustment.quantity_change > 0 %}+{% endif %}{{ adjustment.quantity_change }}</td>
+              <td>{{ adjustment.stock_before }} → {{ adjustment.stock_after }}</td>
+              <td>{{ adjustment.note }}</td>
+              <td>{{ adjustment.created_by|default:"Deleted user" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-0">No stock adjustments have been recorded.</p>
+      {% endif %}
     </div>
   </div>
 </div>
