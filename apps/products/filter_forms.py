@@ -13,6 +13,17 @@ class InventoryAdjustmentFilterForm(forms.Form):
     start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
     direction = forms.ChoiceField(required=False, choices=DIRECTION_CHOICES)
+    created_by = forms.ModelChoiceField(
+        required=False,
+        queryset=get_user_model().objects.none(),
+        empty_label="All users",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["created_by"].queryset = get_user_model().objects.filter(
+            inventory_adjustments__isnull=False
+        ).distinct().order_by("username")
 
     def clean(self):
         cleaned_data = super().clean()
