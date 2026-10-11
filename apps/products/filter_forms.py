@@ -3,9 +3,16 @@ from django.contrib.auth import get_user_model
 
 
 class InventoryAdjustmentFilterForm(forms.Form):
+    DIRECTION_CHOICES = (
+        ("", "All changes"),
+        ("increase", "Stock increases"),
+        ("decrease", "Stock decreases"),
+    )
+
     q = forms.CharField(required=False, max_length=200)
     start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    direction = forms.ChoiceField(required=False, choices=DIRECTION_CHOICES)
 
     def clean(self):
         cleaned_data = super().clean()
