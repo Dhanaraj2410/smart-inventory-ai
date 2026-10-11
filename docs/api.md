@@ -65,6 +65,12 @@ In the web UI, inventory managers can adjust stock from a product detail page;
 any authenticated user can search the full history at `/products/adjustments/`
 and export the current search as CSV.
 
+The adjustment history page also accepts `start_date` and `end_date` in
+`YYYY-MM-DD` format, `direction=increase` or `direction=decrease`, and a
+`created_by` user ID. Combine these with `q` to narrow the results; the CSV
+export link preserves the active filters. An end date earlier than the start
+date is rejected by the page form.
+
 ## Example
 
 With a logged-in session cookie:
