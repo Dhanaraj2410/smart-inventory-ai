@@ -107,6 +107,12 @@ def _inventory_adjustments_queryset(filters):
         adjustments = adjustments.filter(created_at__date__gte=filters["start_date"])
     if filters.get("end_date"):
         adjustments = adjustments.filter(created_at__date__lte=filters["end_date"])
+    if filters.get("direction") == "increase":
+        adjustments = adjustments.filter(quantity_change__gt=0)
+    elif filters.get("direction") == "decrease":
+        adjustments = adjustments.filter(quantity_change__lt=0)
+    if filters.get("created_by"):
+        adjustments = adjustments.filter(created_by=filters["created_by"])
     return adjustments
 
 
