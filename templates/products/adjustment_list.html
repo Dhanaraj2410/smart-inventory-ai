@@ -10,13 +10,9 @@
     <a href="{% url 'products:adjustment_export' %}?q={{ q|urlencode }}" class="btn btn-outline-primary">Export CSV</a>
   </div>
   <form method="get" class="row g-2 mb-3">
-    <div class="col-md-8">
-      <label for="adjustment-search" class="visually-hidden">Search adjustments</label>
-      <input id="adjustment-search" type="search" name="q" value="{{ q }}" class="form-control"
-             placeholder="Search SKU, product, or reason">
-    </div>
-    <div class="col-auto"><button class="btn btn-primary" type="submit">Search</button></div>
-    {% if q %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear</a></div>{% endif %}
+    <div class="col-12">{{ filter_form.q.label_tag }}{{ filter_form.q }}</div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Filter history</button></div>
+    {% if request.GET %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear filters</a></div>{% endif %}
   </form>
   {% if page_obj.object_list %}
   <div class="table-responsive">
