@@ -123,10 +123,17 @@ def inventory_adjustment_list(request):
     filters = filter_form.cleaned_data if filter_form.is_valid() else {}
     adjustments = _inventory_adjustments_queryset(filters)
     page_obj = Paginator(adjustments, 25).get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
     return render(
         request,
         "products/adjustment_list.html",
-        {"page_obj": page_obj, "q": filters.get("q", ""), "filter_form": filter_form},
+        {
+            "page_obj": page_obj,
+            "q": filters.get("q", ""),
+            "filter_form": filter_form,
+            "filter_query": query_params.urlencode(),
+        },
     )
 
 
