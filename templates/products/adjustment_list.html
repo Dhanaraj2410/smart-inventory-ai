@@ -7,16 +7,17 @@
       <h4 class="mb-1">Inventory adjustment history</h4>
       <p class="text-muted mb-0">Review recorded stock changes and their reasons.</p>
     </div>
-    <a href="{% url 'products:adjustment_export' %}?q={{ q|urlencode }}" class="btn btn-outline-primary">Export CSV</a>
+    <a href="{% url 'products:adjustment_export' %}{% if filter_query %}?{{ filter_query }}{% endif %}" class="btn btn-outline-primary">Export CSV</a>
   </div>
   <form method="get" class="row g-2 mb-3">
-    <div class="col-md-8">
-      <label for="adjustment-search" class="visually-hidden">Search adjustments</label>
-      <input id="adjustment-search" type="search" name="q" value="{{ q }}" class="form-control"
-             placeholder="Search SKU, product, or reason">
-    </div>
-    <div class="col-auto"><button class="btn btn-primary" type="submit">Search</button></div>
-    {% if q %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear</a></div>{% endif %}
+    <div class="col-12">{{ filter_form.q.label_tag }}{{ filter_form.q }}</div>
+    <div class="col-md-3">{{ filter_form.start_date.label_tag }}{{ filter_form.start_date }}</div>
+    <div class="col-md-3">{{ filter_form.end_date.label_tag }}{{ filter_form.end_date }}</div>
+    <div class="col-md-3">{{ filter_form.direction.label_tag }}{{ filter_form.direction }}</div>
+    <div class="col-md-3">{{ filter_form.created_by.label_tag }}{{ filter_form.created_by }}</div>
+    {% if filter_form.errors %}<div class="col-12"><div class="alert alert-danger mb-0" role="alert">{{ filter_form.errors }}</div></div>{% endif %}
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Filter history</button></div>
+    {% if request.GET %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear filters</a></div>{% endif %}
   </form>
   {% if page_obj.object_list %}
   <div class="table-responsive">
@@ -49,10 +50,10 @@
     <span class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     <div class="btn-group">
       {% if page_obj.has_previous %}
-      <a class="btn btn-outline-secondary" href="?q={{ q|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>
+      <a class="btn btn-outline-secondary" href="?{{ filter_query }}{% if filter_query %}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
       {% endif %}
       {% if page_obj.has_next %}
-      <a class="btn btn-outline-secondary" href="?q={{ q|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>
+      <a class="btn btn-outline-secondary" href="?{{ filter_query }}{% if filter_query %}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
       {% endif %}
     </div>
   </nav>

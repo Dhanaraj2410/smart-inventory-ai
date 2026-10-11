@@ -7,12 +7,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
+from .filter_forms import InventoryAdjustmentFilterForm
 from .forms import InventoryAdjustmentForm, ProductForm
 from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
 from .services import adjust_inventory
@@ -91,34 +92,62 @@ def product_list(request):
     return render(request, "products/list.html", context)
 
 
-def _inventory_adjustments_queryset(query):
+def _inventory_adjustments_queryset(filters):
     adjustments = InventoryAdjustment.objects.select_related(
         "product", "created_by"
-    ).all()
+    ).order_by("-created_at", "-pk")
+    query = filters.get("q", "")
     if query:
         adjustments = adjustments.filter(
             Q(product__sku__icontains=query)
             | Q(product__name__icontains=query)
             | Q(note__icontains=query)
+            | Q(created_by__username__icontains=query)
         )
+    if filters.get("start_date"):
+        adjustments = adjustments.filter(created_at__date__gte=filters["start_date"])
+    if filters.get("end_date"):
+        adjustments = adjustments.filter(created_at__date__lte=filters["end_date"])
+    if filters.get("direction") == "increase":
+        adjustments = adjustments.filter(quantity_change__gt=0)
+    elif filters.get("direction") == "decrease":
+        adjustments = adjustments.filter(quantity_change__lt=0)
+    if filters.get("created_by"):
+        adjustments = adjustments.filter(created_by=filters["created_by"])
     return adjustments
 
 
 @login_required
 def inventory_adjustment_list(request):
-    query = request.GET.get("q", "").strip()
-    adjustments = _inventory_adjustments_queryset(query)
+    filter_form = InventoryAdjustmentFilterForm(request.GET or None)
+    filters_valid = filter_form.is_valid()
+    filters = filter_form.cleaned_data if filters_valid else {}
+    adjustments = (
+        _inventory_adjustments_queryset(filters)
+        if filters_valid
+        else InventoryAdjustment.objects.none()
+    )
     page_obj = Paginator(adjustments, 25).get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
     return render(
         request,
         "products/adjustment_list.html",
-        {"page_obj": page_obj, "q": query},
+        {
+            "page_obj": page_obj,
+            "q": filters.get("q", ""),
+            "filter_form": filter_form,
+            "filter_query": query_params.urlencode(),
+        },
     )
 
 
 @login_required
 def inventory_adjustment_export(request):
-    query = request.GET.get("q", "").strip()
+    filter_form = InventoryAdjustmentFilterForm(request.GET or None)
+    if not filter_form.is_valid():
+        return HttpResponseBadRequest("Invalid inventory adjustment filters.")
+    filters = filter_form.cleaned_data
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="inventory_adjustments.csv"'
     writer = csv.writer(response)
@@ -134,7 +163,7 @@ def inventory_adjustment_export(request):
             "created_by",
         ]
     )
-    for adjustment in _inventory_adjustments_queryset(query):
+    for adjustment in _inventory_adjustments_queryset(filters):
         writer.writerow(
             [
                 adjustment.created_at.isoformat(),
