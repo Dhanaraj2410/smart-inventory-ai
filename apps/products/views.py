@@ -131,7 +131,8 @@ def inventory_adjustment_list(request):
 
 @login_required
 def inventory_adjustment_export(request):
-    query = request.GET.get("q", "").strip()
+    filter_form = InventoryAdjustmentFilterForm(request.GET or None)
+    filters = filter_form.cleaned_data if filter_form.is_valid() else {}
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="inventory_adjustments.csv"'
     writer = csv.writer(response)
@@ -147,7 +148,7 @@ def inventory_adjustment_export(request):
             "created_by",
         ]
     )
-    for adjustment in _inventory_adjustments_queryset(query):
+    for adjustment in _inventory_adjustments_queryset(filters):
         writer.writerow(
             [
                 adjustment.created_at.isoformat(),
