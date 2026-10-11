@@ -92,16 +92,21 @@ def product_list(request):
     return render(request, "products/list.html", context)
 
 
-def _inventory_adjustments_queryset(query=""):
+def _inventory_adjustments_queryset(filters):
     adjustments = InventoryAdjustment.objects.select_related(
         "product", "created_by"
     ).order_by("-created_at", "-pk")
+    query = filters.get("q", "")
     if query:
         adjustments = adjustments.filter(
             Q(product__sku__icontains=query)
             | Q(product__name__icontains=query)
             | Q(note__icontains=query)
         )
+    if filters.get("start_date"):
+        adjustments = adjustments.filter(created_at__date__gte=filters["start_date"])
+    if filters.get("end_date"):
+        adjustments = adjustments.filter(created_at__date__lte=filters["end_date"])
     return adjustments
 
 
