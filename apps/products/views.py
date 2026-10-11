@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
@@ -132,7 +132,9 @@ def inventory_adjustment_list(request):
 @login_required
 def inventory_adjustment_export(request):
     filter_form = InventoryAdjustmentFilterForm(request.GET or None)
-    filters = filter_form.cleaned_data if filter_form.is_valid() else {}
+    if not filter_form.is_valid():
+        return HttpResponseBadRequest("Invalid inventory adjustment filters.")
+    filters = filter_form.cleaned_data
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="inventory_adjustments.csv"'
     writer = csv.writer(response)
