@@ -15,13 +15,28 @@ class InventoryAdjustmentFilterForm(forms.Form):
         label="Search SKU, product, reason, or user",
         widget=forms.SearchInput(attrs={"class": "form-control"}),
     )
-    start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
-    end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
-    direction = forms.ChoiceField(required=False, choices=DIRECTION_CHOICES)
+    start_date = forms.DateField(
+        required=False,
+        label="From date",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    end_date = forms.DateField(
+        required=False,
+        label="Through date",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+    direction = forms.ChoiceField(
+        required=False,
+        choices=DIRECTION_CHOICES,
+        label="Change type",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
     created_by = forms.ModelChoiceField(
         required=False,
         queryset=get_user_model().objects.none(),
         empty_label="All users",
+        label="Updated by",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     def __init__(self, *args, **kwargs):
