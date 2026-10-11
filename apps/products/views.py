@@ -102,6 +102,7 @@ def _inventory_adjustments_queryset(filters):
             Q(product__sku__icontains=query)
             | Q(product__name__icontains=query)
             | Q(note__icontains=query)
+            | Q(created_by__username__icontains=query)
         )
     if filters.get("start_date"):
         adjustments = adjustments.filter(created_at__date__gte=filters["start_date"])
