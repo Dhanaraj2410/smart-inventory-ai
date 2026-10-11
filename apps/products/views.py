@@ -94,7 +94,7 @@ def product_list(request):
 def _inventory_adjustments_queryset(query):
     adjustments = InventoryAdjustment.objects.select_related(
         "product", "created_by"
-    ).all()
+    ).order_by("-created_at", "-pk")
     if query:
         adjustments = adjustments.filter(
             Q(product__sku__icontains=query)
