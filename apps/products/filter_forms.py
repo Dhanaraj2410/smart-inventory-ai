@@ -9,7 +9,12 @@ class InventoryAdjustmentFilterForm(forms.Form):
         ("decrease", "Stock decreases"),
     )
 
-    q = forms.CharField(required=False, max_length=200)
+    q = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Search SKU, product, reason, or user",
+        widget=forms.SearchInput(attrs={"class": "form-control"}),
+    )
     start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
     direction = forms.ChoiceField(required=False, choices=DIRECTION_CHOICES)
