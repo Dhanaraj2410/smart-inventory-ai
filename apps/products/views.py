@@ -13,6 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.accounts.permissions import role_required
 from apps.accounts.models import User
+from .filter_forms import InventoryAdjustmentFilterForm
 from .forms import InventoryAdjustmentForm, ProductForm
 from .models import InventoryAdjustment, Product, Category, Supplier, Warehouse, STOCK_STATUS_LABELS
 from .services import adjust_inventory
@@ -91,7 +92,7 @@ def product_list(request):
     return render(request, "products/list.html", context)
 
 
-def _inventory_adjustments_queryset(query):
+def _inventory_adjustments_queryset(query=""):
     adjustments = InventoryAdjustment.objects.select_related(
         "product", "created_by"
     ).order_by("-created_at", "-pk")
