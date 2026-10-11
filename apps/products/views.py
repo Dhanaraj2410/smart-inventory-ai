@@ -118,13 +118,14 @@ def _inventory_adjustments_queryset(filters):
 
 @login_required
 def inventory_adjustment_list(request):
-    query = request.GET.get("q", "").strip()
-    adjustments = _inventory_adjustments_queryset(query)
+    filter_form = InventoryAdjustmentFilterForm(request.GET or None)
+    filters = filter_form.cleaned_data if filter_form.is_valid() else {}
+    adjustments = _inventory_adjustments_queryset(filters)
     page_obj = Paginator(adjustments, 25).get_page(request.GET.get("page"))
     return render(
         request,
         "products/adjustment_list.html",
-        {"page_obj": page_obj, "q": query},
+        {"page_obj": page_obj, "q": filters.get("q", ""), "filter_form": filter_form},
     )
 
 
