@@ -11,6 +11,10 @@
   </div>
   <form method="get" class="row g-2 mb-3">
     <div class="col-12">{{ filter_form.q.label_tag }}{{ filter_form.q }}</div>
+    <div class="col-md-3">{{ filter_form.start_date.label_tag }}{{ filter_form.start_date }}</div>
+    <div class="col-md-3">{{ filter_form.end_date.label_tag }}{{ filter_form.end_date }}</div>
+    <div class="col-md-3">{{ filter_form.direction.label_tag }}{{ filter_form.direction }}</div>
+    <div class="col-md-3">{{ filter_form.created_by.label_tag }}{{ filter_form.created_by }}</div>
     <div class="col-auto"><button class="btn btn-primary" type="submit">Filter history</button></div>
     {% if request.GET %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'products:adjustment_list' %}">Clear filters</a></div>{% endif %}
   </form>
